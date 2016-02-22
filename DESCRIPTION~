@@ -1,0 +1,23 @@
+Package: loadeR.2nc
+Depends:
+    R(>= 3.0.0),    
+Imports:
+    ncdf4,
+    loadeR
+Suggests:
+    downscaleR,
+Type: Package
+Title: R Package for Climate Data Loading and Manipulation
+Version: 0.0-0
+Date: 2016-02-12
+Authors@R: as.person(c(
+    "Santander Meteorology Group <http://meteo.unican.es> [aut]",
+    "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
+    "Sixto Herrera <herreras@unican.es> [ctb]",
+    "Maialen Iturbide <miturbide@ifca,unican.es> [ctb]",
+    "Wietse Franssen <> [ctb]"))
+BugReports: https://github.com/SantanderMetGroup/loadeR.2nc/issues
+URL: https://github.com/SantanderMetGroup/loadeR/wiki
+Description: Write loadeR grids to netCDF files.
+License: file LICENSE
+RoxygenNote: 5.0.1
