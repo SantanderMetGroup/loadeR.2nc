@@ -83,9 +83,8 @@ grid2nc <- function(data,
       lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
       member.index <- grep("^member$", attr(data$Data, "dimensions"))
       datesList <- as.POSIXct(data$Dates$start, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
-      # times <- (as.double(datesList) - as.double(datesList[1])) / 86400
-      times <- (as.double(datesList) - as.double(datesList[1]))
-      times <- times/times[2]
+      if (all(is.na(datesList))) datesList <- as.POSIXct(data$Dates$start, tz = "GMT")
+      times <- (as.double(datesList) - as.double(datesList[1])) / 86400
       dimtime <- ncdim_def("time", paste("days since", data$Dates$start[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
       dimlon  <- ncdim_def("lon", units = "degrees_east", data$xyCoords$x, longname = "longitude", create_dimvar = TRUE)
       dimlat  <- ncdim_def("lat", units = "degrees_north", data$xyCoords$y, longname = "latitude", create_dimvar = TRUE)
