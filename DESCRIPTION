@@ -9,9 +9,9 @@ Extends:
     loadeR,
     loadeR.ECOMS
 Type: Package
-Title: R Package for Climate Data Loading and Manipulation
-Version: 0.0-1
-Date: 2016-02-23
+Title: A loadeR bundle extension for exporting to netCDF
+Version: 0.0-2
+Date: 2016-03-14
 Authors@R: as.person(c(
     "Santander Meteorology Group <http://meteo.unican.es> [aut]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
