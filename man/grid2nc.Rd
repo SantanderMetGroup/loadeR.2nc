@@ -9,30 +9,29 @@ grid2nc(data, NetCDFOutFile = "out.nc4", missval = 1e+20,
   compression = 4, shuffle = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{data}{A grid data object coming from \code{\link[loadeR]{loadGridData}} or \code{\link[loadeR]{interpData}} 
-or the function \code{\link[loadeR.ECOMS]{loadECOMS}} of package \pkg{loadeR.ECOMS}.}
+\item{data}{A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})}
 
-\item{NetCDFOutFile}{Name of the file created by the function. (default to "out.nc4")}
+\item{NetCDFOutFile}{Name of the file created by the function. (default to \code{"out.nc4"})}
 
-\item{missval}{Missing value codification (default to 1e20)}
+\item{missval}{Missing value codification (default to \code{1e20})}
 
 \item{globalAttributes}{Optional. A list of global attributes included in the NetCDF file. Same format as \code{varAttributes}.}
 
-\item{varAttributes}{Optional. List of attributes to be included in the variable written in the NetCDF file. (NULL, default).
+\item{varAttributes}{Optional. List of attributes to be included in the variable written in the NetCDF file. Default to \code{NULL}.
 It has the format \code{list("name_of_attribute1" = attribute1, "name_of_attribute2" = attribute2} etc.}
 
-\item{prec}{Precision to write the attribute. If not specified, the written precision is the same as the variable whose 
-attribute this is. This can be overridden by specifying this argument with a value
- of \code{"short"}, \code{"float"}, \code{"double"}, or \code{"text"}.}
+\item{prec}{Precision to write the attribute. If not specified, the written precision is given by the variable's
+corresponding attribute. This can be overridden by specifying the following argument values:
+ \code{"short"}, \code{"float"}, \code{"double"}, or \code{"text"}.}
 
-\item{compression}{If set to an integer between 1 (less compression) and 9 (highest compression), enables 
-compression for the variable as it is written to the file. Turning compression on forces the 
+\item{compression}{Integer value between 1 (less compression) and 9 (highest compression), enabling 
+compression for the variable as it is written to the file. Note that turning compression on forces the 
 output file to netcdf v4 format (the default), not compatible with older software 
 that can only handle version 3 files.}
 
 \item{shuffle}{Logical. Turns on (\code{TRUE}) or off (\code{FALSE}, the default) the shuffle filter.
 According to netcdf documentation, turning the shuffle filter on can improve compression for integer variables.
- Turning the shuffle filter on forces the output file to netcdf v4 format (the default), 
+ Note that turning the shuffle filter on forces the output file to netcdf v4 format (the default), 
  not compatible with older software that can only handle version 3 files.}
 
 \item{verbose}{Optional. If set to \code{TRUE}, switches \code{\link[ncdf4]{nc_create}} to verbose mode}
@@ -49,7 +48,7 @@ data(tx)
 # Name of output file:
 fileName <- "tasmax_WFDEI_JJA_W2001_2010.nc4"
 # Including a global attribute:
-globalAttributeList <- list("institution" = "Santander MetGroup, http://www.meteo.unican.es/")
+globalAttributeList <- list("institution" = "SantanderMetGroup, http://www.meteo.unican.es/")
 # Including two variable attributes:
 varAttributeList <- list(var_attr1 = "one_attribute", var_attr2 = "another_attribute")
 # Create file:
@@ -61,12 +60,11 @@ grid2nc(data = tx,
         varAttributes = varAttributeList)
 }
 }
-\author{
-S. Herrera, W. Franssen and J. Bedia
-}
 \references{
 \itemize{
 \item David Pierce \email{dpierce@ucsd.edu}, Interface to Unidata netCDF (version 4 or earlier) format data files, http://dwpierce.com/software
 }
 }
-
+\author{
+S. Herrera, W. Franssen and J. Bedia
+}

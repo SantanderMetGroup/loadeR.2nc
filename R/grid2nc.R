@@ -1,6 +1,6 @@
 # grid2nc.R Export loadeR grids to netCDF
 #
-#     Copyright (C) 2016 Santander Meteorology Group (http://www.meteo.unican.es)
+#     Copyright (C) 2018 Santander Meteorology Group (http://www.meteo.unican.es)
 #
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -23,23 +23,22 @@
 #' @importFrom ncdf4 ncatt_put 
 #' @importFrom ncdf4 ncvar_put
 #' @importFrom ncdf4 nc_close
-#' @param data A grid data object coming from \code{\link[loadeR]{loadGridData}} or \code{\link[loadeR]{interpData}} 
-#'  or the function \code{\link[loadeR.ECOMS]{loadECOMS}} of package \pkg{loadeR.ECOMS}. 
-#' @param NetCDFOutFile Name of the file created by the function. (default to "out.nc4")
-#' @param missval Missing value codification (default to 1e20)
+#' @param data A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})
+#' @param NetCDFOutFile Name of the file created by the function. (default to \code{"out.nc4"})
+#' @param missval Missing value codification (default to \code{1e20})
 #' @param globalAttributes Optional. A list of global attributes included in the NetCDF file. Same format as \code{varAttributes}.
-#' @param varAttributes Optional. List of attributes to be included in the variable written in the NetCDF file. (NULL, default).
+#' @param varAttributes Optional. List of attributes to be included in the variable written in the NetCDF file. Default to \code{NULL}.
 #' It has the format \code{list("name_of_attribute1" = attribute1, "name_of_attribute2" = attribute2} etc.
-#' @param prec Precision to write the attribute. If not specified, the written precision is the same as the variable whose 
-#' attribute this is. This can be overridden by specifying this argument with a value
-#'  of \code{"short"}, \code{"float"}, \code{"double"}, or \code{"text"}.
-#' @param compression If set to an integer between 1 (less compression) and 9 (highest compression), enables 
-#' compression for the variable as it is written to the file. Turning compression on forces the 
+#' @param prec Precision to write the attribute. If not specified, the written precision is given by the variable's
+#' corresponding attribute. This can be overridden by specifying the following argument values:
+#'  \code{"short"}, \code{"float"}, \code{"double"}, or \code{"text"}.
+#' @param compression Integer value between 1 (less compression) and 9 (highest compression), enabling 
+#' compression for the variable as it is written to the file. Note that turning compression on forces the 
 #' output file to netcdf v4 format (the default), not compatible with older software 
 #' that can only handle version 3 files. 
 #' @param shuffle Logical. Turns on (\code{TRUE}) or off (\code{FALSE}, the default) the shuffle filter.
 #'  According to netcdf documentation, turning the shuffle filter on can improve compression for integer variables.
-#'   Turning the shuffle filter on forces the output file to netcdf v4 format (the default), 
+#'   Note that turning the shuffle filter on forces the output file to netcdf v4 format (the default), 
 #'   not compatible with older software that can only handle version 3 files. 
 #' @param verbose Optional. If set to \code{TRUE}, switches \code{\link[ncdf4]{nc_create}} to verbose mode
 #' @return A NetCDF-4 file with the variable and attributes defined in the inputs.
@@ -54,7 +53,7 @@
 #' # Name of output file:
 #' fileName <- "tasmax_WFDEI_JJA_W2001_2010.nc4"
 #' # Including a global attribute:
-#' globalAttributeList <- list("institution" = "Santander MetGroup, http://www.meteo.unican.es/")
+#' globalAttributeList <- list("institution" = "SantanderMetGroup, http://www.meteo.unican.es/")
 #' # Including two variable attributes:
 #' varAttributeList <- list(var_attr1 = "one_attribute", var_attr2 = "another_attribute")
 #' # Create file:

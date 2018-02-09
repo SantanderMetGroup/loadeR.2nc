@@ -14,11 +14,10 @@ data(tx)
 \description{
 A Grid containing data of summer maximum 2m temperature for the Mediterranean (2001-2010)
 }
-\author{
-Santander MetGroup (http://meteo.unican.es)
-}
 \references{
 Weedon, G.P et al. 2011. Creation of the WATCH Forcing Data and its Use to Assess Global and Regional Reference Crop Evaporation over Land during the Twentieth Century. Journal of Hydrometeorology 12, 823-848. doi:10.1175/2011JHM1369.1
 }
+\author{
+Santander MetGroup (http://meteo.unican.es)
+}
 \keyword{data}
-
