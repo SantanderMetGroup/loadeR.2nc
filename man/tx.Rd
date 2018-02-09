@@ -3,21 +3,23 @@
 \docType{data}
 \name{tx}
 \alias{tx}
-\title{Maximum temperature grid dataset}
-\format{a \pkg{loadeR} grid}
+\title{Maximum temperature daily grid dataset}
+\format{a climate4R grid}
 \source{
-Data from the WATCH Forcing Dataset ERA-Interim retrieved from the ECOMS User Data Gateway (http://meteo.unican.es/trac/wiki/udg/ecoms).
+Data from the WATCH Forcing Dataset ERA-Interim (Weedon et al. 2011) retrieved from the ECOMS User Data Gateway (\url{http://meteo.unican.es/ecoms-udg}).
 }
 \usage{
 data(tx)
 }
 \description{
-A Grid containing data of summer maximum 2m temperature for the Mediterranean (2001-2010)
+A climate4R grid containing daily data of summer maximum 2m temperature for the Mediterranean (2001-2010)
 }
 \references{
 Weedon, G.P et al. 2011. Creation of the WATCH Forcing Data and its Use to Assess Global and Regional Reference Crop Evaporation over Land during the Twentieth Century. Journal of Hydrometeorology 12, 823-848. doi:10.1175/2011JHM1369.1
+
+climate4R page \url{http://meteo.unican.es/climate4R}
 }
 \author{
-Santander MetGroup (http://meteo.unican.es)
+Santander Meteorology Group (http://meteo.unican.es)
 }
 \keyword{data}

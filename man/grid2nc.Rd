@@ -44,7 +44,8 @@ Export a loadeR grid to NetCDF
 }
 \examples{
 \dontrun{
-data(tx)
+library(loadeR.2nc)
+data(tx) # A climate4R grid
 # Name of output file:
 fileName <- "tasmax_WFDEI_JJA_W2001_2010.nc4"
 # Including a global attribute:

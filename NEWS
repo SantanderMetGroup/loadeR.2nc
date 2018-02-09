@@ -1,5 +1,7 @@
 loadeR.2nc
 ==========
 
-* Bug fix in date definition, affecting monthly datasets only
+* Bug fix in the placement of global attributes
+* Update installed example dataset to convey the current climate4R grid attributes and reduce its size
+* Other minor documentation updates
 
