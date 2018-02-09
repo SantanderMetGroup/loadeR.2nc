@@ -121,7 +121,7 @@ grid2nc <- function(data,
       z <- attributes(data$Variable$level)
       if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
       if (!is.null(globalAttributes)) {      
-            sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, var$name, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
+            sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
       }
       # Bias-corrected products
       if (length(attr(data$Data, "correction")) > 0) {
