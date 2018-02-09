@@ -10,16 +10,17 @@ Extends:
     loadeR.ECOMS
 Type: Package
 Title: A loadeR bundle extension for exporting to netCDF
-Version: 0.0-2
+Version: 0.0.2
 Date: 2018-02-09
 Authors@R: as.person(c(
     "Santander Meteorology Group <http://meteo.unican.es> [cph]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
     "Sixto Herrera <herreras@unican.es> [aut]",
-    "Maialen Iturbide <miturbide@ifca,unican.es> [ctb]",
+    "Maialen Iturbide <miturbide@ifca.unican.es> [ctb]",
     "Wietse Franssen <wietse.franssen@wur.nl> [ctb]"))
 BugReports: https://github.com/SantanderMetGroup/loadeR.2nc/issues
 URL: https://github.com/SantanderMetGroup/loadeR/wiki
-Description: Write loadeR grids to netCDF files.
+Encoding: UTF-8
+Description: Write climate4R grids to netCDF files (http://www.meteo.unican.es/climate4R).
 License: file LICENSE
 RoxygenNote: 6.0.1
