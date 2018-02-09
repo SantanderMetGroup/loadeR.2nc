@@ -11,11 +11,11 @@ Extends:
 Type: Package
 Title: A loadeR bundle extension for exporting to netCDF
 Version: 0.0-2
-Date: 2016-03-14
+Date: 2018-02-09
 Authors@R: as.person(c(
-    "Santander Meteorology Group <http://meteo.unican.es> [aut]",
+    "Santander Meteorology Group <http://meteo.unican.es> [cph]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
-    "Sixto Herrera <herreras@unican.es> [ctb]",
+    "Sixto Herrera <herreras@unican.es> [aut]",
     "Maialen Iturbide <miturbide@ifca,unican.es> [ctb]",
     "Wietse Franssen <wietse.franssen@wur.nl> [ctb]"))
 BugReports: https://github.com/SantanderMetGroup/loadeR.2nc/issues
