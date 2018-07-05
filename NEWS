@@ -1,7 +1,18 @@
-loadeR.2nc
-==========
+# loadeR changelog
 
+For earlier version changes, see the GitHub Releases [Tab](https://github.com/SantanderMetGroup/loadeR/releases)
+
+## v0.0-0 (22 Feb 2016)
+* First package release
+
+## v0.0-1 (23 Feb 2016)
+* Bug fix in date definition, affecting monthly datasets only
+
+## v0.0.2 (09 Feb .)
 * Bug fix in the placement of global attributes
 * Update installed example dataset to convey the current climate4R grid attributes and reduce its size
 * Other minor documentation updates
+
+## v0.1.0 (05 Jul 2018)
+* New function to export station data
 
