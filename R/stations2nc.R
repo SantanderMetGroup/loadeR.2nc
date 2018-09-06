@@ -103,23 +103,24 @@ stations2nc <- function(data,
 	varLat <- ncvar_def("lat", "degrees_north", dim = list(dimSta), longname = "station latitude",  prec = "double")
 	varHeight <- ncvar_def("alt", "m", dim = list(dimSta), missval=NA, longname = "height", prec= "double")
 	varName <- ncvar_def("station_name", "", dim = list(nName, dimSta), longname = "station name", prec= "char")
-	varProj <- ncvar_def("projection", "", dim = list(nProj), prec= "char")
+	varProj <- ncvar_def("projection", "", dim = list(nProj), prec = "char")
 	varStation <- ncvar_def("station_id", "", dim = list(dimnchar, dimSta), longname = "station identifier", prec= "char")
-	var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, longname = tmpStdName, compression = compression, shuffle = shuffle, prec = prec) 
+	var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, compression = compression, shuffle = shuffle, prec = prec) 
 	vars <- list(varLat, varLon, varStation, varName, varHeight, varProj, var) ##  ... , force_v4=FALSE
 	ncnew <- nc_create(NetCDFOutFile, vars, verbose = verbose)
-	ncatt_put(ncnew, data$Variable$varName, "standardName", standardName)
-	ncatt_put(ncnew, "time", "standardName","time")
+	ncatt_put(ncnew, data$Variable$varName, "standard_name", standardName)
+	ncatt_put(ncnew, "time", "standard_name","time")
 	ncatt_put(ncnew, "time", "axis","T")
 	ncatt_put(ncnew, "time", "_CoordinateAxisType","Time")
 	ncatt_put(ncnew, "time", "_ChunkSize",1)
 	ncatt_put(ncnew, "station_id", "cf_role","timeseries_id")
 	ncatt_put(ncnew, "projection", "EPSG_code","EPSG:4326")
-	ncatt_put(ncnew, "lon", "standardName","longitude")
-	ncatt_put(ncnew, "lat", "standardName","latitude")
-	ncatt_put(ncnew, "alt", "standardName","altitude")
+	ncatt_put(ncnew, "lon", "standard_name","longitude")
+	ncatt_put(ncnew, "lat", "standard_name","latitude")
+	ncatt_put(ncnew, "alt", "standard_name","altitude")
+	ncatt_put(ncnew, "alt", "missing_value", NA, prec = "double")
 	if (length(member.index) > 0) {
-		ncatt_put(ncnew, "member", "standardName","realization")
+		ncatt_put(ncnew, "member", "standard_name","realization")
 		ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
 		ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
 	}
@@ -127,8 +128,8 @@ stations2nc <- function(data,
 	if (!is.null(varAttributes)) {
 		sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
 	}
-	ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
-	ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
+	ncatt_put(ncnew, var$name, "description", attr(data$Variable, "description"))
+	ncatt_put(ncnew, var$name, "longname", attr(data$Variable, "longname"))
 	ncatt_put(ncnew, var$name, "coordinates", "lat lon")
 	z <- attributes(data$Variable$level)
 	if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
@@ -136,17 +137,17 @@ stations2nc <- function(data,
 		sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, var$name, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
 	}
 	# Bias-corrected products
-	if (length(attr(data$Data, "correction")) > 0) {
+	if (length(attr(data$Variable, "correction")) > 0) {
 		ncatt_put(ncnew, 0, "product", "Bias-Correction")
-		ncatt_put(ncnew, 0, "bc_method", attr(data$Data, "correction"))
+		ncatt_put(ncnew, 0, "bc_method", attr(data$Variable, "correction"))
 	}
 	# Downscaled products
-	if (length(attr(data$Data, "downscaling:method")) > 0) {
+	if (length(attr(data$Variable, "downscaling:method")) > 0) {
 		ncatt_put(ncnew, 0, "product", "Downscaling")
-		ncatt_put(ncnew, 0, "downscaling_method", attr(data$Data, "downscaling:method"))
+		ncatt_put(ncnew, 0, "downscaling_method", attr(data$Variable, "downscaling:method"))
 	}
 	if (length(attr(data, "dataset")) > 0) {
-		ncatt_put(ncnew, 0, "dataset", attr(data, "dataset"))
+	  ncatt_put(ncnew, 0, "dataset", attr(data, "dataset"))
 	}
 	if (length(attr(data, "source")) > 0) {
 		ncatt_put(ncnew, 0, "source", attr(data, "source"))
