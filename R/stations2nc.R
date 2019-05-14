@@ -146,8 +146,8 @@ stations2nc <- function(data,
 		ncatt_put(ncnew, 0, "product", "Downscaling")
 		ncatt_put(ncnew, 0, "downscaling_method", attr(data$Variable, "downscaling:method"))
 	}
-	if (length(attr(data, "dataset")) > 0) {
-	  ncatt_put(ncnew, 0, "dataset", attr(data, "dataset"))
+	if (length(attr(data$Variable, "dataset")) > 0) {
+	  ncatt_put(ncnew, 0, "dataset", attr(data$Variable, "dataset"))
 	}
 	if (length(attr(data, "source")) > 0) {
 		ncatt_put(ncnew, 0, "source", attr(data, "source"))
