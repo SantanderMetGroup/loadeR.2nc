@@ -66,7 +66,6 @@
 #'         varAttributes = varAttributeList)
 #' }
 
-
 grid2nc <- function(data,
                     NetCDFOutFile = "out.nc4",
                     missval = 1e20,
@@ -76,74 +75,129 @@ grid2nc <- function(data,
                     compression = 4,
                     shuffle = FALSE,
                     verbose = FALSE) {
-      tmpStdName <- data$Variable$varName
-      tmpUnits <- attributes(data$Variable)$"units"
-      time.index <- grep("^time$", attr(data$Data, "dimensions"))
-      lon.index <- grep("^lon$", attr(data$Data, "dimensions"))
-      lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
-      member.index <- grep("^member$", attr(data$Data, "dimensions"))
-      datesList <- as.POSIXct(data$Dates$start, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
-      if (all(is.na(datesList))) datesList <- as.POSIXct(data$Dates$start, tz = "GMT")
-      times <- (as.double(datesList) - as.double(datesList[1])) / 86400
-      dimtime <- ncdim_def("time", paste("days since", data$Dates$start[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
-      dimlon  <- ncdim_def("lon", units = "degrees_east", data$xyCoords$x, longname = "longitude", create_dimvar = TRUE)
-      dimlat  <- ncdim_def("lat", units = "degrees_north", data$xyCoords$y, longname = "latitude", create_dimvar = TRUE)
-      if (length(member.index) > 0) {
-            dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
-            perOrdered <- c(lon.index, lat.index, member.index, time.index)
-            dimOrdered <- list(dimlon, dimlat, dimens, dimtime)
-      } else {
-            perOrdered <- c(lon.index,lat.index,time.index)
-            dimOrdered <- list(dimlon,dimlat,dimtime)
-      }
-      dataOrdered <- aperm(data$Data, perOrdered)
-      var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, longname = tmpStdName, compression = compression, shuffle = shuffle)
-      ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
-      ncatt_put(ncnew, "time", "standard_name","time")
-      ncatt_put(ncnew, "time", "axis","T")
-      ncatt_put(ncnew, "time", "_CoordinateAxisType","Time")
-      ncatt_put(ncnew, "time", "_ChunkSize",1)
-      ncatt_put(ncnew, "lon", "standard_name","longitude")
-      ncatt_put(ncnew, "lon", "_CoordinateAxisType","Lon")
-      ncatt_put(ncnew, "lat", "standard_name","latitude")
-      ncatt_put(ncnew, "lat", "_CoordinateAxisType","Lat")
-      if (length(member.index) > 0) {
-            ncatt_put(ncnew, "member", "standard_name","realization")
-            ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
-            ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
-      }
-      ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
-      if (!is.null(varAttributes)) {
-            sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
-      }
-      ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
-      ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
-      z <- attributes(data$Variable$level)
-      if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
-      if (!is.null(globalAttributes)) {      
-            sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
-      }
-      # Bias-corrected products
-      if (length(attr(data$Data, "correction")) > 0) {
-            ncatt_put(ncnew, 0, "product", "Bias-Correction")
-            ncatt_put(ncnew, 0, "bc_method", attr(data$Data, "correction"))
-      }
-      # Downscaled products
-      if (length(attr(data$Data, "downscaling:method")) > 0) {
-            ncatt_put(ncnew, 0, "product", "Downscaling")
-            ncatt_put(ncnew, 0, "downscaling_method", attr(data$Data, "downscaling:method"))
-      }
-      if (length(attr(data, "dataset")) > 0) {
-            ncatt_put(ncnew, 0, "dataset", attr(data, "dataset"))
-      }
-      if (length(attr(data, "source")) > 0) {
-            ncatt_put(ncnew, 0, "source", attr(data, "source"))
-      }
-      ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
-      ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
-      ncvar_put(ncnew, var, dataOrdered)
-      nc_close(ncnew)
-      message("[", Sys.time(), "] NetCDF file written in: ", NetCDFOutFile)
+  tmpStdName <- data$Variable$varName
+  tmpUnits <- attributes(data$Variable)$"units"
+  time.index <- grep("^time$", attr(data$Data, "dimensions"))
+  lon.index <- grep("^lon$", attr(data$Data, "dimensions"))
+  lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
+  member.index <- grep("^member$", attr(data$Data, "dimensions"))
+  datesList <- as.POSIXct(data$Dates$start, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
+  if (all(is.na(datesList))) datesList <- as.POSIXct(data$Dates$start, tz = "GMT")
+  times <- (as.double(datesList) - as.double(datesList[1])) / 86400
+  dimtime <- ncdim_def("time", paste("days since", data$Dates$start[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
+  if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    dimlon  <- ncdim_def("rlon", units = "degrees", data$xyCoords$x, longname = "longitude in rotated pole grid", create_dimvar = TRUE)
+    dimlat  <- ncdim_def("rlat", units = "degrees", data$xyCoords$y, longname = "latitude in rotated pole grid", create_dimvar = TRUE)
+  }else{
+    dimlon  <- ncdim_def("lon", units = "degrees_east", data$xyCoords$x, longname = "longitude", create_dimvar = TRUE)
+    dimlat  <- ncdim_def("lat", units = "degrees_north", data$xyCoords$y, longname = "latitude", create_dimvar = TRUE)
+  }
+  if (length(member.index) > 0) {
+    dimens  <- ncdim_def("member", units = "", 1:(dim(data$Data)[member.index]), create_dimvar = FALSE)
+    dimnchar <- ncdim_def("nchar", "", 1:nchar(max(data$Members)), create_dimvar=FALSE )
+    ## dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
+    ## dimens  <- ncdim_def("member", units = "member", data$Members, longname = "realization", create_dimvar = TRUE)
+    perOrdered <- c(lon.index, lat.index, member.index, time.index)
+    dimOrdered <- list(dimlon, dimlat, dimens, dimtime)
+  } else {
+    perOrdered <- c(lon.index,lat.index,time.index)
+    dimOrdered <- list(dimlon,dimlat,dimtime)
+  }
+  dataOrdered <- aperm(data$Data, perOrdered)
+  var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval = missval, longname = tmpStdName, compression = compression, shuffle = shuffle, prec = prec)
+  if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    varProj <- ncvar_def("rotated_pole", units = "", dim = list(), prec = "char")
+    varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlat,dimlon), longname = "longitude", prec = prec)
+    varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlat,dimlon), longname = "latitude", prec = prec)
+    if (is.character(data$Members)){
+      varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+      var <- list(var, varLon, varLat, varProj, varMem)
+    }else{
+      varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+      var <- list(var, varLon, varLat, varProj)
+    }
+  }else{
+    if (is.character(data$Members)){
+      varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+      var <- list(var, varMem)
+    }
+  }
+  ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
+  ncatt_put(ncnew, "time", "standard_name","time")
+  ncatt_put(ncnew, "time", "axis","T")
+  ncatt_put(ncnew, "time", "_CoordinateAxisType","Time")
+  ncatt_put(ncnew, "time", "_ChunkSize",1)
+  if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    ncatt_put(ncnew, "rlon", "standard_name","grid_longitude")
+    ncatt_put(ncnew, "rlon", "axis","X")
+    ncatt_put(ncnew, "rlon", "_CoordinateAxisType","GeoX")
+    ncatt_put(ncnew, "rlat", "standard_name","grid_latitude")
+    ncatt_put(ncnew, "rlat", "axis","Y")
+    ncatt_put(ncnew, "rlat", "_CoordinateAxisType","GeoY")
+    ncatt_put(ncnew, varProj$name, "grid_mapping_name","rotated_latitude_longitude")
+    ncatt_put(ncnew, varProj$name, "grid_north_pole_latitude","39.25")
+    ncatt_put(ncnew, varProj$name, "grid_north_pole_longitude","-162.0")
+    ncatt_put(ncnew, varLon$name, "standard_name","longitude")
+    ncatt_put(ncnew, varLon$name, "_CoordinateAxisType","Lon")
+    ncatt_put(ncnew, varLat$name, "standard_name","latitude")
+    ncatt_put(ncnew, varLat$name, "_CoordinateAxisType","Lat")
+  }else{
+    ncatt_put(ncnew, "lon", "standard_name","longitude")
+    ncatt_put(ncnew, "lon", "_CoordinateAxisType","Lon")
+    ncatt_put(ncnew, "lat", "standard_name","latitude")
+    ncatt_put(ncnew, "lat", "_CoordinateAxisType","Lat")
+  }
+  if (length(member.index) > 0) {
+    ncatt_put(ncnew, "member", "standard_name","realization")
+    ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
+    ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
+  }
+  ncatt_put(ncnew, var[[1]]$name, "missing_value", missval, prec = prec)
+  ## ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
+  if (!is.null(varAttributes)) {
+    sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[1]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+  }
+  ncatt_put(ncnew, var[[1]]$name, "description", attributes(data$Variable)$"description")
+  ncatt_put(ncnew, var[[1]]$name, "longname", attributes(data$Variable)$"longname")
+  if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    ncatt_put(ncnew, var[[1]]$name, "grid_mapping", "rotated_pole")
+    ## 	ncatt_put(ncnew, var[[1]]$name, "coordinates", "time rlon rlat")
+    ## }else{
+    ## 	ncatt_put(ncnew, var[[1]]$name, "coordinates", "time lon lat")
+  }
+  z <- attributes(data$Variable$level)
+  if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
+  if (!is.null(globalAttributes)) {      
+    sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
+  }
+  # Bias-corrected products
+  if (length(attr(data$Data, "correction")) > 0) {
+    ncatt_put(ncnew, 0, "product", "Bias-Correction")
+    ncatt_put(ncnew, 0, "bc_method", attr(data$Data, "correction"))
+  }
+  # Downscaled products
+  if (length(attr(data$Data, "downscaling:method")) > 0) {
+    ncatt_put(ncnew, 0, "product", "Downscaling")
+    ncatt_put(ncnew, 0, "downscaling_method", attr(data$Data, "downscaling:method"))
+  }
+  if (length(attr(data, "dataset")) > 0) {
+    ncatt_put(ncnew, 0, "dataset", attr(data, "dataset"))
+  }
+  if (length(attr(data, "source")) > 0) {
+    ncatt_put(ncnew, 0, "source", attr(data, "source"))
+  }
+  ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
+  ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
+  ncvar_put(ncnew, var[[1]], dataOrdered)
+  if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    ncvar_put(ncnew, var[[2]], data$xyCoords$lon)
+    ncvar_put(ncnew, var[[3]], data$xyCoords$lat)
+  }
+  if (is.character(data$Members)){
+    ncvar_put(ncnew, var[[length(var)]], data$Members)
+  }
+  nc_close(ncnew)
+  message("[", Sys.time(), "] NetCDF file written in: ", NetCDFOutFile)
 }
 
 
