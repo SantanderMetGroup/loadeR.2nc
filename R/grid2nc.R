@@ -109,17 +109,21 @@ grid2nc <- function(data,
     varProj <- ncvar_def("rotated_pole", units = "", dim = list(), prec = "char")
     varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlat,dimlon), longname = "longitude", prec = prec)
     varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlat,dimlon), longname = "latitude", prec = prec)
-    if (is.character(data$Members)){
-      varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
-      var <- list(var, varLon, varLat, varProj, varMem)
-    }else{
-      varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
-      var <- list(var, varLon, varLat, varProj)
+    if (length(member.index) > 0) {
+      if (is.character(data$Members)){
+        varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+        var <- list(var, varLon, varLat, varProj, varMem)
+      }else{
+        varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+        var <- list(var, varLon, varLat, varProj)
+      }
     }
   }else{
-    if (is.character(data$Members)){
-      varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
-      var <- list(var, varMem)
+    if (length(member.index) > 0) {
+      if (is.character(data$Members)){
+        varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+        var <- list(var, varMem)
+      }
     }
   }
   ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
