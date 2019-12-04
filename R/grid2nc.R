@@ -74,7 +74,8 @@ grid2nc <- function(data,
                     prec = "float",
                     compression = 4,
                     shuffle = FALSE,
-                    verbose = FALSE) {
+                    verbose = FALSE,
+                    gridNorthPole = c("39.25","-162.0")) {
   tmpStdName <- data$Variable$varName
   tmpUnits <- attributes(data$Variable)$"units"
   time.index <- grep("^time$", attr(data$Data, "dimensions"))
@@ -94,9 +95,7 @@ grid2nc <- function(data,
   }
   if (length(member.index) > 0) {
     dimens  <- ncdim_def("member", units = "", 1:(dim(data$Data)[member.index]), create_dimvar = FALSE)
-    dimnchar <- ncdim_def("nchar", "", 1:max(nchar(data$Members)), create_dimvar=FALSE )
-    ## dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
-    ## dimens  <- ncdim_def("member", units = "member", data$Members, longname = "realization", create_dimvar = TRUE)
+    dimnchar <- ncdim_def("nchar", "", 1:max(nchar(data$Members)), create_dimvar = FALSE)
     perOrdered <- c(lon.index, lat.index, member.index, time.index)
     dimOrdered <- list(dimlon, dimlat, dimens, dimtime)
   } else {
@@ -112,18 +111,21 @@ grid2nc <- function(data,
     if (length(member.index) > 0) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
-        var <- list(var, varLon, varLat, varProj, varMem)
       }else{
-        varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
-        var <- list(var, varLon, varLat, varProj)
+        varMem <- ncvar_def("member", units = "1", dim = list(dimens), prec = "int")
       }
+      var <- list(var, varLon, varLat, varProj, varMem)
+    }else{
+      var <- list(var, varLon, varLat, varProj)
     }
   }else{
     if (length(member.index) > 0) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
-        var <- list(var, varMem)
+      }else{
+        varMem <- ncvar_def("member", units = "1", dim = list(dimens), prec = "int")
       }
+      var <- list(var, varMem)
     }
   }
   ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
@@ -139,8 +141,8 @@ grid2nc <- function(data,
     ncatt_put(ncnew, "rlat", "axis","Y")
     ncatt_put(ncnew, "rlat", "_CoordinateAxisType","GeoY")
     ncatt_put(ncnew, varProj$name, "grid_mapping_name","rotated_latitude_longitude")
-    ncatt_put(ncnew, varProj$name, "grid_north_pole_latitude","39.25")
-    ncatt_put(ncnew, varProj$name, "grid_north_pole_longitude","-162.0")
+    ncatt_put(ncnew, varProj$name, "grid_north_pole_latitude",gridNorthPole[1])
+    ncatt_put(ncnew, varProj$name, "grid_north_pole_longitude",gridNorthPole[2])
     ncatt_put(ncnew, varLon$name, "standard_name","longitude")
     ncatt_put(ncnew, varLon$name, "_CoordinateAxisType","Lon")
     ncatt_put(ncnew, varLat$name, "standard_name","latitude")
@@ -165,14 +167,21 @@ grid2nc <- function(data,
       ncatt_put(ncnew, var[[1]]$name, "grid_mapping", "rotated_pole")
     }
   }else{
-    ncatt_put(ncnew, var$name, "missing_value", missval, prec = prec)
-    if (!is.null(varAttributes)) {
-      sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
-    }
-    ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
-    ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
     if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
-      ncatt_put(ncnew, var$name, "grid_mapping", "rotated_pole")
+      ncatt_put(ncnew, var[[1]]$name, "missing_value", missval, prec = prec)
+      if (!is.null(varAttributes)) {
+        sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[1]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+      }
+      ncatt_put(ncnew, var[[1]]$name, "description", attributes(data$Variable)$"description")
+      ncatt_put(ncnew, var[[1]]$name, "longname", attributes(data$Variable)$"longname")
+      ncatt_put(ncnew, var[[1]]$name, "grid_mapping", "rotated_pole")
+    }else{
+      ncatt_put(ncnew, var$name, "missing_value", missval, prec = prec)
+      if (!is.null(varAttributes)) {
+        sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+      }
+      ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
+      ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
     }
   }
   ## ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
