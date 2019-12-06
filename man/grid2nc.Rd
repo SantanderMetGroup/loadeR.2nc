@@ -6,7 +6,8 @@
 \usage{
 grid2nc(data, NetCDFOutFile = "out.nc4", missval = 1e+20,
   globalAttributes = NULL, varAttributes = NULL, prec = "float",
-  compression = 4, shuffle = FALSE, verbose = FALSE)
+  compression = 4, shuffle = FALSE, verbose = FALSE,
+  gridNorthPole = c("39.25", "-162.0"))
 }
 \arguments{
 \item{data}{A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})}
