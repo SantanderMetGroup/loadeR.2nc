@@ -36,6 +36,10 @@ According to netcdf documentation, turning the shuffle filter on can improve com
  not compatible with older software that can only handle version 3 files.}
 
 \item{verbose}{Optional. If set to \code{TRUE}, switches \code{\link[ncdf4]{nc_create}} to verbose mode}
+
+\item{gridNorthPole}{Vector with the longitude and latitude. Default is c("39.25","-162.0")}
+
+\item{coordBounds}{Default is NULL.}
 }
 \value{
 A NetCDF-4 file with the variable and attributes defined in the inputs.

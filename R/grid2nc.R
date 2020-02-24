@@ -41,6 +41,8 @@
 #'   Note that turning the shuffle filter on forces the output file to netcdf v4 format (the default), 
 #'   not compatible with older software that can only handle version 3 files. 
 #' @param verbose Optional. If set to \code{TRUE}, switches \code{\link[ncdf4]{nc_create}} to verbose mode
+#' @param gridNorthPole Vector with the longitude and latitude. Default is c("39.25","-162.0")
+#' @param coordBounds Default is NULL.
 #' @return A NetCDF-4 file with the variable and attributes defined in the inputs.
 #' @references
 #' \itemize{
