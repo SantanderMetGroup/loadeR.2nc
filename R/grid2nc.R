@@ -75,7 +75,7 @@ grid2nc <- function(data,
                     compression = 4,
                     shuffle = FALSE,
                     verbose = FALSE,
-                    gridNorthPole = c("39.25","-162.0")) {
+                    gridNorthPole = c("39.25","-162.0"), coordBounds = NULL) {
   tmpStdName <- data$Variable$varName
   tmpUnits <- attributes(data$Variable)$"units"
   time.index <- grep("^time$", attr(data$Data, "dimensions"))
@@ -102,21 +102,38 @@ grid2nc <- function(data,
     perOrdered <- c(lon.index,lat.index,time.index)
     dimOrdered <- list(dimlon,dimlat,dimtime)
   }
+  if (!is.null(coordBounds)){
+    dimBounds  <- ncdim_def("vertices", units = "", c(1:4), create_dimvar = FALSE)
+  }
   dataOrdered <- aperm(data$Data, perOrdered)
   var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval = missval, longname = tmpStdName, compression = compression, shuffle = shuffle, prec = prec)
   if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
     varProj <- ncvar_def("rotated_pole", units = "", dim = list(), prec = "char")
-    varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlat,dimlon), longname = "longitude", prec = prec)
-    varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlat,dimlon), longname = "latitude", prec = prec)
+    ## varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlat,dimlon), longname = "longitude", prec = prec)
+    ## varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlat,dimlon), longname = "latitude", prec = prec)
+    varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlon,dimlat), longname = "longitude", prec = "double")
+    varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlon,dimlat), longname = "latitude", prec = "double")
+    if (!is.null(coordBounds)){
+       varLonBounds <- ncvar_def("lon_vertices", units = "degrees_east", dim = list(dimBounds,dimlon,dimlat), longname = "longitude", prec = "double")
+       varLatBounds <- ncvar_def("lat_vertices", units = "degrees_north", dim = list(dimBounds,dimlon,dimlat), longname = "latitude", prec = "double")
+    }
     if (length(member.index) > 0) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
       }else{
         varMem <- ncvar_def("member", units = "1", dim = list(dimens), prec = "int")
       }
-      var <- list(var, varLon, varLat, varProj, varMem)
+      if (!is.null(coordBounds)){
+         var <- list(var, varLon, varLat, varProj, varLonBounds, varLatBounds, varMem)
+	  }else{
+         var <- list(var, varLon, varLat, varProj, varMem)
+	  }
     }else{
-      var <- list(var, varLon, varLat, varProj)
+      if (!is.null(coordBounds)){
+         var <- list(var, varLon, varLat, varProj, varLonBounds, varLatBounds)
+	  }else{
+         var <- list(var, varLon, varLat, varProj)
+	  }
     }
   }else{
     if (length(member.index) > 0) {
@@ -167,7 +184,7 @@ grid2nc <- function(data,
       ncatt_put(ncnew, var[[1]]$name, "grid_mapping", "rotated_pole")
     }
   }else{
-    if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+	if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
       ncatt_put(ncnew, var[[1]]$name, "missing_value", missval, prec = prec)
       if (!is.null(varAttributes)) {
         sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[1]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
@@ -182,7 +199,7 @@ grid2nc <- function(data,
       }
       ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
       ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
-    }
+	}
   }
   ## ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
   z <- attributes(data$Variable$level)
@@ -211,8 +228,12 @@ grid2nc <- function(data,
   if ((!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole") | is.character(data$Members)){
     ncvar_put(ncnew, var[[1]], dataOrdered)
     if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
-      ncvar_put(ncnew, var[[2]], data$xyCoords$lon)
-      ncvar_put(ncnew, var[[3]], data$xyCoords$lat)
+      ncvar_put(ncnew, var[[2]], t(data$xyCoords$lon))
+      ncvar_put(ncnew, var[[3]], t(data$xyCoords$lat))
+      if (!is.null(coordBounds)){
+         ncvar_put(ncnew, var[[5]], aperm(coordBounds$lon,c(3,2,1)))
+         ncvar_put(ncnew, var[[6]], aperm(coordBounds$lat,c(3,2,1)))
+	  }
     }
     if (is.character(data$Members)){
       ncvar_put(ncnew, var[[length(var)]], data$Members)
