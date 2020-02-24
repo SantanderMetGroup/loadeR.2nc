@@ -16,3 +16,6 @@ For earlier version changes, see the GitHub Releases [Tab](https://github.com/Sa
 ## v0.1.0 (05 Jul 2018)
 * New function to export station data
 
+## v0.1.1 (24 Feb 2020)
+* Allow member dimension writing as character
+* Other enhancements
