@@ -4,10 +4,18 @@
 \alias{stations2nc}
 \title{Station data 2 netCDF export}
 \usage{
-stations2nc(data, NetCDFOutFile = "out.nc4", missval = 1e+20,
-  globalAttributes = NULL, varAttributes = NULL, prec = "float",
-  compression = 4, shuffle = FALSE, standardName = NULL,
-  verbose = FALSE)
+stations2nc(
+  data,
+  NetCDFOutFile = "out.nc4",
+  missval = 1e+20,
+  globalAttributes = NULL,
+  varAttributes = NULL,
+  prec = "float",
+  compression = 4,
+  shuffle = FALSE,
+  standardName = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{data}{A grid data object coming from \code{\link[loadeR]{loadGridData}} or \code{\link[transformeR]{interpGrid}} 

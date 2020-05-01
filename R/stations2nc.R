@@ -88,7 +88,7 @@ stations2nc <- function(data,
 	dimtime <- ncdim_def("time", paste("days since", data$Dates$start[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
 	dimSta  <- ncdim_def("station", "", 1:length(data$Metadata$station_id), create_dimvar = FALSE)
 	dimnchar <- ncdim_def("id_strlen", "", 1:max(nchar(data$Metadata$station_id)), create_dimvar=FALSE )
-	nName <- ncdim_def("name_strlen", "", 1:max(nchar(data$Metadata$name)), create_dimvar=FALSE )
+	nName <- suppressWarnings(tryCatch({ncdim_def("name_strlen", "", 1:max(nchar(data$Metadata$name)), create_dimvar=FALSE )}, error = function(e){NA}))
 	nProj <- ncdim_def("projection_strlen", "", 1:1, create_dimvar=FALSE )
 	if (length(member.index) > 0) {
 		dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
@@ -101,12 +101,15 @@ stations2nc <- function(data,
 	dataOrdered <- aperm(data$Data, perOrdered)
 	varLon <- ncvar_def("lon", "degrees_east" , dim = list(dimSta), longname = "station longitude", prec = "double")
 	varLat <- ncvar_def("lat", "degrees_north", dim = list(dimSta), longname = "station latitude",  prec = "double")
-	varHeight <- ncvar_def("alt", "m", dim = list(dimSta), missval=NA, longname = "height", prec= "double")
-	varName <- ncvar_def("station_name", "", dim = list(nName, dimSta), longname = "station name", prec= "char")
 	varProj <- ncvar_def("projection", "", dim = list(nProj), prec = "char")
 	varStation <- ncvar_def("station_id", "", dim = list(dimnchar, dimSta), longname = "station identifier", prec= "char")
 	var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, compression = compression, shuffle = shuffle, prec = prec) 
+	varHeight <- NULL
+	varName <- NULL
+	if(!is.null(data[["Metadata"]][["altitude"]])) varHeight <- ncvar_def("alt", "m", dim = list(dimSta), missval=NA, longname = "height", prec= "double")
+	if(!is.null(data[["Metadata"]][["name"]])) varName <- ncvar_def("station_name", "", dim = list(nName, dimSta), longname = "station name", prec= "char")
 	vars <- list(varLat, varLon, varStation, varName, varHeight, varProj, var) ##  ... , force_v4=FALSE
+	vars <- vars[unlist(lapply(vars, function(e) !is.null(e)))]
 	ncnew <- nc_create(NetCDFOutFile, vars, verbose = verbose)
 	ncatt_put(ncnew, data$Variable$varName, "standard_name", standardName)
 	ncatt_put(ncnew, "time", "standard_name","time")
@@ -117,8 +120,8 @@ stations2nc <- function(data,
 	ncatt_put(ncnew, "projection", "EPSG_code","EPSG:4326")
 	ncatt_put(ncnew, "lon", "standard_name","longitude")
 	ncatt_put(ncnew, "lat", "standard_name","latitude")
-	ncatt_put(ncnew, "alt", "standard_name","altitude")
-	ncatt_put(ncnew, "alt", "missing_value", NA, prec = "double")
+	if(!is.null(data[["Metadata"]][["altitude"]])) ncatt_put(ncnew, "alt", "standard_name","altitude")
+	if(!is.null(data[["Metadata"]][["altitude"]])) ncatt_put(ncnew, "alt", "missing_value", NA, prec = "double")
 	if (length(member.index) > 0) {
 		ncatt_put(ncnew, "member", "standard_name","realization")
 		ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
@@ -158,8 +161,8 @@ stations2nc <- function(data,
 	ncatt_put(ncnew, 0, "featureType", "timeSeries")
 	ncvar_put(ncnew, var, dataOrdered)
 	ncvar_put(ncnew, varStation, data$Metadata$station_id)
-	ncvar_put(ncnew, varName, data$Metadata$name)
-	ncvar_put(ncnew, varHeight, data$Metadata$altitude)
+	if(!is.null(data[["Metadata"]][["name"]])) ncvar_put(ncnew, varName, data$Metadata$name)
+	if(!is.null(data[["Metadata"]][["altitude"]])) ncvar_put(ncnew, varHeight, data$Metadata$altitude)
 	ncvar_put(ncnew, varLon, data$xyCoords$x)
 	ncvar_put(ncnew, varLat, data$xyCoords$y)
 	nc_close(ncnew)

@@ -4,10 +4,19 @@
 \alias{grid2nc}
 \title{Grid 2 netCDF export}
 \usage{
-grid2nc(data, NetCDFOutFile = "out.nc4", missval = 1e+20,
-  globalAttributes = NULL, varAttributes = NULL, prec = "float",
-  compression = 4, shuffle = FALSE, verbose = FALSE,
-  gridNorthPole = c("39.25", "-162.0"), coordBounds = NULL)
+grid2nc(
+  data,
+  NetCDFOutFile = "out.nc4",
+  missval = 1e+20,
+  globalAttributes = NULL,
+  varAttributes = NULL,
+  prec = "float",
+  compression = 4,
+  shuffle = FALSE,
+  verbose = FALSE,
+  gridNorthPole = c("39.25", "-162.0"),
+  coordBounds = NULL
+)
 }
 \arguments{
 \item{data}{A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})}
