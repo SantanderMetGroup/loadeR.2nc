@@ -206,6 +206,7 @@ grid2nc <- function(data,
   ## ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
   z <- attributes(data$Variable$level)
   if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
+  if (is.null(globalAttributes)) globalAttributes <- attributes(data)[-1]
   if (!is.null(globalAttributes)) {      
     sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
   }
