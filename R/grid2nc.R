@@ -208,7 +208,10 @@ grid2nc <- function(data,
   if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
   if (is.null(globalAttributes)) globalAttributes <- attributes(data)[-1]
   if (!is.null(globalAttributes)) {      
-    sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
+    indGlobal <- which(names(globalAttributes) != "_NCProperties") ## _NCProperties is a Global Attribute imposed by the writting software,
+    if (length(indGlobal) > 0){
+      sapply(indGlobal, function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
+    }
   }
   # Bias-corrected products
   if (length(attr(data$Data, "correction")) > 0) {
