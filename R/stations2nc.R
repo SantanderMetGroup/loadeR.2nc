@@ -82,36 +82,73 @@ stations2nc <- function(data,
 	time.index <- grep("^time$", attr(data$Data, "dimensions"))
 	loc.index <- grep("^loc$", attr(data$Data, "dimensions"))
 	member.index <- grep("^member$", attr(data$Data, "dimensions"))
-	datesList <- as.POSIXct(data$Dates$start, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
-	if (all(is.na(datesList))) datesList <- as.POSIXct(data$Dates$start, tz = "GMT")
+	var.index <- grep("^var$", attr(data$Data, "dimensions"))
+	if (isMultigrid(data)){
+	  startList <- data$Dates[[1]]$start
+	}else{
+	  startList <- data$Dates$start
+	}
+	datesList <- as.POSIXct(startList, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
+	if (all(is.na(datesList))) datesList <- as.POSIXct(startList, tz = "GMT")
 	times <- (as.double(datesList) - as.double(datesList[1])) / 86400
-	dimtime <- ncdim_def("time", paste("days since", data$Dates$start[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
+	dimtime <- ncdim_def("time", paste("days since", startList), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
 	dimSta  <- ncdim_def("station", "", 1:length(data$Metadata$station_id), create_dimvar = FALSE)
 	dimnchar <- ncdim_def("id_strlen", "", 1:max(nchar(data$Metadata$station_id)), create_dimvar=FALSE )
 	nName <- suppressWarnings(tryCatch({ncdim_def("name_strlen", "", 1:max(nchar(data$Metadata$name)), create_dimvar=FALSE )}, error = function(e){NA}))
 	nProj <- ncdim_def("projection_strlen", "", 1:1, create_dimvar=FALSE )
-	if (length(member.index) > 0) {
-		dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
+	if ((length(member.index) > 0) & !isMultigrid(data)) {
+	  dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
 		perOrdered <- c(loc.index, member.index, time.index)
 		dimOrdered <- list(dimSta, dimens, dimtime)
+	} else if (!isMultigrid(data)) {
+	  perOrdered <- c(loc.index,time.index)
+	  dimOrdered <- list(dimSta,dimtime)
 	} else {
-		perOrdered <- c(loc.index,time.index)
-		dimOrdered <- list(dimSta,dimtime)
+	  if (length(member.index) > 0) {
+	    perOrdered <- c(loc.index,time.index) - 2
+	  } else {
+	    perOrdered <- c(loc.index,time.index) - 1
+	  }
+	  dimOrdered <- list(dimSta,dimtime)
 	}
-	dataOrdered <- aperm(data$Data, perOrdered)
 	varLon <- ncvar_def("lon", "degrees_east" , dim = list(dimSta), longname = "station longitude", prec = "double")
 	varLat <- ncvar_def("lat", "degrees_north", dim = list(dimSta), longname = "station latitude",  prec = "double")
 	varProj <- ncvar_def("projection", "", dim = list(nProj), prec = "char")
 	varStation <- ncvar_def("station_id", "", dim = list(dimnchar, dimSta), longname = "station identifier", prec= "char")
-	var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, compression = compression, shuffle = shuffle, prec = prec) 
+	if (isMultigrid(data)) {
+	  dataOrdered <- lapply(1:length(tmpStdName), function(v){
+	    data.var <- subsetGrid(data, var = tmpStdName[v])
+	    data.var <- aperm(data.var$Data, perOrdered)
+	  })
+	  var <- lapply(1:length(tmpStdName), function(v){
+	    var.var <- ncvar_def(tmpStdName[v], units = tmpUnits[v], dim = dimOrdered, missval, compression = compression, shuffle = shuffle, prec = prec) 
+	  })
+	} else{
+	  dataOrdered <- aperm(data$Data, perOrdered)
+	  var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, compression = compression, shuffle = shuffle, prec = prec) 
+	}
 	varHeight <- NULL
 	varName <- NULL
 	if(!is.null(data[["Metadata"]][["altitude"]])) varHeight <- ncvar_def("alt", "m", dim = list(dimSta), missval=NA, longname = "height", prec= "double")
 	if(!is.null(data[["Metadata"]][["name"]])) varName <- ncvar_def("station_name", "", dim = list(nName, dimSta), longname = "station name", prec= "char")
-	vars <- list(varLat, varLon, varStation, varName, varHeight, varProj, var) ##  ... , force_v4=FALSE
+
+	vars <- list(varLat, varLon, varStation, varName, varHeight, varProj) ##  ... , force_v4=FALSE
+	if (!isMultigrid(data)) {
+	  vars[[length(vars)+1]] <- var
+	} else {
+	  for (v in c(1:length(tmpStdName))){
+	    vars[[length(vars)+1]] <- var[[v]]
+	  }
+	}
 	vars <- vars[unlist(lapply(vars, function(e) !is.null(e)))]
 	ncnew <- nc_create(NetCDFOutFile, vars, verbose = verbose)
-	ncatt_put(ncnew, data$Variable$varName, "standard_name", standardName)
+	if (!isMultigrid(data)) {
+	  ncatt_put(ncnew, data$Variable$varName, "standard_name", standardName)
+	} else {
+	  for (v in c(1:length(tmpStdName))){
+	    ncatt_put(ncnew, data$Variable$varName[[v]], "standard_name", standardName[v])
+	  }
+	}
 	ncatt_put(ncnew, "time", "standard_name","time")
 	ncatt_put(ncnew, "time", "axis","T")
 	ncatt_put(ncnew, "time", "_CoordinateAxisType","Time")
@@ -127,17 +164,31 @@ stations2nc <- function(data,
 		ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
 		ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
 	}
-	ncatt_put(ncnew, data$Variable$varName, "missing_value", missval, prec = prec)
-	if (!is.null(varAttributes)) {
-		sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+	if (!isMultigrid(data)) {
+	  ncatt_put(ncnew, data$Variable$varName, "missing_value", missval, prec = prec)
+	  if (!is.null(varAttributes)) {
+	    sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+	  }
+	  ncatt_put(ncnew, var$name, "description", attr(data$Variable, "description"))
+	  ncatt_put(ncnew, var$name, "longname", attr(data$Variable, "longname"))
+	  ncatt_put(ncnew, var$name, "coordinates", "lat lon")
+	  z <- attributes(data$Variable$level)
+	  if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
+	} else {
+	  for (v in c(1:length(tmpStdName))){
+	    ncatt_put(ncnew, data$Variable$varName[[v]], "missing_value", missval, prec = prec)
+	    if (!is.null(varAttributes)) {
+	      sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[v]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+	    }
+	    ncatt_put(ncnew, var[[v]]$name, "description", attr(data$Variable, "description")[[v]])
+	    ncatt_put(ncnew, var[[v]]$name, "longname", attr(data$Variable, "longname")[[v]])
+	    ncatt_put(ncnew, var[[v]]$name, "coordinates", "lat lon")
+	    z <- attributes(data$Variable$level[v])
+	    if (!is.null(z)) ncatt_put(ncnew, var[[v]]$name, "level", z)
+	  }
 	}
-	ncatt_put(ncnew, var$name, "description", attr(data$Variable, "description"))
-	ncatt_put(ncnew, var$name, "longname", attr(data$Variable, "longname"))
-	ncatt_put(ncnew, var$name, "coordinates", "lat lon")
-	z <- attributes(data$Variable$level)
-	if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
-	if (!is.null(globalAttributes)) {      
-		sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, var$name, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
+	if (!is.null(globalAttributes)) {
+	  sapply(1:length(globalAttributes), function(x) ncatt_put(ncnew, 0, names(globalAttributes)[x], as.character(globalAttributes[[x]])))
 	}
 	# Bias-corrected products
 	if (length(attr(data$Variable, "correction")) > 0) {
@@ -159,10 +210,20 @@ stations2nc <- function(data,
 	ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
 	ncatt_put(ncnew, 0, "coordinates", "projection")
 	ncatt_put(ncnew, 0, "featureType", "timeSeries")
-	ncvar_put(ncnew, var, dataOrdered)
-	ncvar_put(ncnew, varStation, data$Metadata$station_id)
-	if(!is.null(data[["Metadata"]][["name"]])) ncvar_put(ncnew, varName, data$Metadata$name)
-	if(!is.null(data[["Metadata"]][["altitude"]])) ncvar_put(ncnew, varHeight, data$Metadata$altitude)
+	
+	if  (!isMultigrid(data)) {
+	  ncvar_put(ncnew, var, dataOrdered)
+	  ncvar_put(ncnew, varStation, data$Metadata$station_id)
+	  if(!is.null(data[["Metadata"]][["name"]])) ncvar_put(ncnew, varName, data$Metadata$name)
+	  if(!is.null(data[["Metadata"]][["altitude"]])) ncvar_put(ncnew, varHeight, data$Metadata$altitude)
+	} else  {
+	  for (v in c(1:length(tmpStdName))){
+	    ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
+	    ncvar_put(ncnew, varStation, data$Metadata$station_id)
+	    if(!is.null(data[["Metadata"]][["name"]])) ncvar_put(ncnew, varName, data$Metadata$name)
+	    if(!is.null(data[["Metadata"]][["altitude"]])) ncvar_put(ncnew, varHeight, data$Metadata$altitude)
+	  }
+	}	  
 	ncvar_put(ncnew, varLon, data$xyCoords$x)
 	ncvar_put(ncnew, varLat, data$xyCoords$y)
 	nc_close(ncnew)
@@ -170,3 +231,5 @@ stations2nc <- function(data,
 }
 
 #end
+
+
