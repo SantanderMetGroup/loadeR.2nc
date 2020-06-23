@@ -2,6 +2,7 @@
 
 export(grid2nc)
 export(stations2nc)
+import(transformeR)
 importFrom(ncdf4,nc_close)
 importFrom(ncdf4,nc_create)
 importFrom(ncdf4,ncatt_put)

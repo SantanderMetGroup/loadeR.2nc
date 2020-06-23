@@ -23,6 +23,7 @@
 #' @importFrom ncdf4 ncatt_put 
 #' @importFrom ncdf4 ncvar_put
 #' @importFrom ncdf4 nc_close
+#' @import transformeR
 #' @param data A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})
 #' @param NetCDFOutFile Name of the file created by the function. (default to \code{"out.nc4"})
 #' @param missval Missing value codification (default to \code{1e20})
@@ -85,7 +86,7 @@ grid2nc <- function(data,
   lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
   member.index <- grep("^member$", attr(data$Data, "dimensions"))
   var.index <- grep("^var$", attr(data$Data, "dimensions"))
-  if (isMultigrid(data)){
+  if (transformeR::isMultigrid(data)){
     startList <- data$Dates[[1]]$start
   }else{
     startList <- data$Dates$start
@@ -101,12 +102,12 @@ grid2nc <- function(data,
     dimlon  <- ncdim_def("lon", units = "degrees_east", data$xyCoords$x, longname = "longitude", create_dimvar = TRUE)
     dimlat  <- ncdim_def("lat", units = "degrees_north", data$xyCoords$y, longname = "latitude", create_dimvar = TRUE)
   }
-  if ((length(member.index) > 0) & !isMultigrid(data)) {
+  if ((length(member.index) > 0) & !transformeR::isMultigrid(data)) {
     dimens  <- ncdim_def("member", units = "", 1:(dim(data$Data)[member.index]), create_dimvar = FALSE)
     dimnchar <- ncdim_def("nchar", "", 1:max(nchar(data$Members)), create_dimvar = FALSE)
     perOrdered <- c(lon.index, lat.index, member.index, time.index)
     dimOrdered <- list(dimlon, dimlat, dimens, dimtime)
-  } else if (!isMultigrid(data)) {
+  } else if (!transformeR::isMultigrid(data)) {
     perOrdered <- c(lon.index,lat.index,time.index)
     dimOrdered <- list(dimlon,dimlat,dimtime)
   } else {
@@ -120,7 +121,7 @@ grid2nc <- function(data,
   if (!is.null(coordBounds)){
     dimBounds  <- ncdim_def("vertices", units = "", c(1:4), create_dimvar = FALSE)
   }
-  if (isMultigrid(data)) {
+  if (transformeR::isMultigrid(data)) {
     dataOrdered <- lapply(1:length(tmpStdName), function(v){
       data.var <- subsetGrid(data, var = tmpStdName[v])
       data.var <- aperm(data.var$Data, perOrdered)
@@ -142,14 +143,14 @@ grid2nc <- function(data,
       varLonBounds <- ncvar_def("lon_vertices", units = "degrees_east", dim = list(dimBounds,dimlon,dimlat), longname = "longitude", prec = "double")
       varLatBounds <- ncvar_def("lat_vertices", units = "degrees_north", dim = list(dimBounds,dimlon,dimlat), longname = "latitude", prec = "double")
     }
-    if (!isMultigrid(data)) {
+    if (!transformeR::isMultigrid(data)) {
       var <- list(var, varLon, varLat, varProj)
     } else {
       var[[length(var)+1]] <- varLon
       var[[length(var)+1]] <- varLat
       var[[length(var)+1]] <- varProj
     }
-    if ((length(member.index) > 0) & (!isMultigrid(data))) {
+    if ((length(member.index) > 0) & (!transformeR::isMultigrid(data))) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
       }else{
@@ -167,7 +168,7 @@ grid2nc <- function(data,
       }
     }
   }else{
-    if ((length(member.index) > 0) & (!isMultigrid(data))) {
+    if ((length(member.index) > 0) & (!transformeR::isMultigrid(data))) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
       }else{
@@ -201,7 +202,7 @@ grid2nc <- function(data,
     ncatt_put(ncnew, "lat", "standard_name","latitude")
     ncatt_put(ncnew, "lat", "_CoordinateAxisType","Lat")
   }
-  if ((length(member.index) > 0) & (!isMultigrid(data))) {
+  if ((length(member.index) > 0) & (!transformeR::isMultigrid(data))) {
     ncatt_put(ncnew, "member", "standard_name","realization")
     ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
     ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
@@ -214,7 +215,7 @@ grid2nc <- function(data,
     if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
       ncatt_put(ncnew, var[[1]]$name, "grid_mapping", "rotated_pole")
     }
-  }else if (isMultigrid(data)){
+  }else if (transformeR::isMultigrid(data)){
     for (v in c(1:length(tmpStdName))){
       ncatt_put(ncnew, var[[v]]$name, "missing_value", missval, prec = prec)
       if (!is.null(varAttributes)) {
@@ -287,7 +288,7 @@ grid2nc <- function(data,
     if (is.character(data$Members)){
       ncvar_put(ncnew, var[[length(var)]], data$Members)
     }
-  }else if (isMultigrid(data)){
+  }else if (transformeR::isMultigrid(data)){
     for (v in c(1:length(tmpStdName))){
       ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
     }

@@ -83,7 +83,7 @@ stations2nc <- function(data,
 	loc.index <- grep("^loc$", attr(data$Data, "dimensions"))
 	member.index <- grep("^member$", attr(data$Data, "dimensions"))
 	var.index <- grep("^var$", attr(data$Data, "dimensions"))
-	if (isMultigrid(data)){
+	if (transformeR::isMultigrid(data)){
 	  startList <- data$Dates[[1]]$start
 	}else{
 	  startList <- data$Dates$start
@@ -96,11 +96,11 @@ stations2nc <- function(data,
 	dimnchar <- ncdim_def("id_strlen", "", 1:max(nchar(data$Metadata$station_id)), create_dimvar=FALSE )
 	nName <- suppressWarnings(tryCatch({ncdim_def("name_strlen", "", 1:max(nchar(data$Metadata$name)), create_dimvar=FALSE )}, error = function(e){NA}))
 	nProj <- ncdim_def("projection_strlen", "", 1:1, create_dimvar=FALSE )
-	if ((length(member.index) > 0) & !isMultigrid(data)) {
+	if ((length(member.index) > 0) & !transformeR::isMultigrid(data)) {
 	  dimens  <- ncdim_def("member", units = "member", 0:(dim(data$Data)[member.index] - 1), longname = "realization", create_dimvar = TRUE)
 		perOrdered <- c(loc.index, member.index, time.index)
 		dimOrdered <- list(dimSta, dimens, dimtime)
-	} else if (!isMultigrid(data)) {
+	} else if (!transformeR::isMultigrid(data)) {
 	  perOrdered <- c(loc.index,time.index)
 	  dimOrdered <- list(dimSta,dimtime)
 	} else {
@@ -115,7 +115,7 @@ stations2nc <- function(data,
 	varLat <- ncvar_def("lat", "degrees_north", dim = list(dimSta), longname = "station latitude",  prec = "double")
 	varProj <- ncvar_def("projection", "", dim = list(nProj), prec = "char")
 	varStation <- ncvar_def("station_id", "", dim = list(dimnchar, dimSta), longname = "station identifier", prec= "char")
-	if (isMultigrid(data)) {
+	if (transformeR::isMultigrid(data)) {
 	  dataOrdered <- lapply(1:length(tmpStdName), function(v){
 	    data.var <- subsetGrid(data, var = tmpStdName[v])
 	    data.var <- aperm(data.var$Data, perOrdered)
@@ -133,7 +133,7 @@ stations2nc <- function(data,
 	if(!is.null(data[["Metadata"]][["name"]])) varName <- ncvar_def("station_name", "", dim = list(nName, dimSta), longname = "station name", prec= "char")
 
 	vars <- list(varLat, varLon, varStation, varName, varHeight, varProj) ##  ... , force_v4=FALSE
-	if (!isMultigrid(data)) {
+	if (!transformeR::isMultigrid(data)) {
 	  vars[[length(vars)+1]] <- var
 	} else {
 	  for (v in c(1:length(tmpStdName))){
@@ -142,7 +142,7 @@ stations2nc <- function(data,
 	}
 	vars <- vars[unlist(lapply(vars, function(e) !is.null(e)))]
 	ncnew <- nc_create(NetCDFOutFile, vars, verbose = verbose)
-	if (!isMultigrid(data)) {
+	if (!transformeR::isMultigrid(data)) {
 	  ncatt_put(ncnew, data$Variable$varName, "standard_name", standardName)
 	} else {
 	  for (v in c(1:length(tmpStdName))){
@@ -164,7 +164,7 @@ stations2nc <- function(data,
 		ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
 		ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
 	}
-	if (!isMultigrid(data)) {
+	if (!transformeR::isMultigrid(data)) {
 	  ncatt_put(ncnew, data$Variable$varName, "missing_value", missval, prec = prec)
 	  if (!is.null(varAttributes)) {
 	    sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
@@ -211,7 +211,7 @@ stations2nc <- function(data,
 	ncatt_put(ncnew, 0, "coordinates", "projection")
 	ncatt_put(ncnew, 0, "featureType", "timeSeries")
 	
-	if  (!isMultigrid(data)) {
+	if  (!transformeR::isMultigrid(data)) {
 	  ncvar_put(ncnew, var, dataOrdered)
 	  ncvar_put(ncnew, varStation, data$Metadata$station_id)
 	  if(!is.null(data[["Metadata"]][["name"]])) ncvar_put(ncnew, varName, data$Metadata$name)

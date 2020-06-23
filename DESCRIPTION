@@ -2,10 +2,10 @@ Package: loadeR.2nc
 Depends:
     R(>= 3.5.0)    
 Imports:
-    ncdf4
+    ncdf4,
+      transformeR
 Suggests:
-    downscaleR,
-    transformeR
+    downscaleR
 Extends:
     loadeR,
     loadeR.ECOMS
