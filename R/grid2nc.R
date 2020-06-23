@@ -84,10 +84,16 @@ grid2nc <- function(data,
   lon.index <- grep("^lon$", attr(data$Data, "dimensions"))
   lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
   member.index <- grep("^member$", attr(data$Data, "dimensions"))
-  datesList <- as.POSIXct(data$Dates$start, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
-  if (all(is.na(datesList))) datesList <- as.POSIXct(data$Dates$start, tz = "GMT")
+  var.index <- grep("^var$", attr(data$Data, "dimensions"))
+  if (isMultigrid(data)){
+    startList <- data$Dates[[1]]$start
+  }else{
+    startList <- data$Dates$start
+  }
+  datesList <- as.POSIXct(startList, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
+  if (all(is.na(datesList))) datesList <- as.POSIXct(startList, tz = "GMT")
   times <- (as.double(datesList) - as.double(datesList[1])) / 86400
-  dimtime <- ncdim_def("time", paste("days since", data$Dates$start[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
+  dimtime <- ncdim_def("time", paste("days since", startList[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
   if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
     dimlon  <- ncdim_def("rlon", units = "degrees", data$xyCoords$x, longname = "longitude in rotated pole grid", create_dimvar = TRUE)
     dimlat  <- ncdim_def("rlat", units = "degrees", data$xyCoords$y, longname = "latitude in rotated pole grid", create_dimvar = TRUE)
@@ -95,20 +101,37 @@ grid2nc <- function(data,
     dimlon  <- ncdim_def("lon", units = "degrees_east", data$xyCoords$x, longname = "longitude", create_dimvar = TRUE)
     dimlat  <- ncdim_def("lat", units = "degrees_north", data$xyCoords$y, longname = "latitude", create_dimvar = TRUE)
   }
-  if (length(member.index) > 0) {
+  if ((length(member.index) > 0) & !isMultigrid(data)) {
     dimens  <- ncdim_def("member", units = "", 1:(dim(data$Data)[member.index]), create_dimvar = FALSE)
     dimnchar <- ncdim_def("nchar", "", 1:max(nchar(data$Members)), create_dimvar = FALSE)
     perOrdered <- c(lon.index, lat.index, member.index, time.index)
     dimOrdered <- list(dimlon, dimlat, dimens, dimtime)
-  } else {
+  } else if (!isMultigrid(data)) {
     perOrdered <- c(lon.index,lat.index,time.index)
+    dimOrdered <- list(dimlon,dimlat,dimtime)
+  } else {
+    if (length(member.index) > 0) {
+      perOrdered <- c(lon.index,lat.index,time.index) - 2
+    } else {
+      perOrdered <- c(lon.index,lat.index,time.index) - 1
+    }
     dimOrdered <- list(dimlon,dimlat,dimtime)
   }
   if (!is.null(coordBounds)){
     dimBounds  <- ncdim_def("vertices", units = "", c(1:4), create_dimvar = FALSE)
   }
-  dataOrdered <- aperm(data$Data, perOrdered)
-  var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval = missval, longname = tmpStdName, compression = compression, shuffle = shuffle, prec = prec)
+  if (isMultigrid(data)) {
+    dataOrdered <- lapply(1:length(tmpStdName), function(v){
+      data.var <- subsetGrid(data, var = tmpStdName[v])
+      data.var <- aperm(data.var$Data, perOrdered)
+    })
+    var <- lapply(1:length(tmpStdName), function(v){
+      var.var <- ncvar_def(tmpStdName[v], units = tmpUnits[v], dim = dimOrdered, missval = missval, longname = tmpStdName[v], compression = compression, shuffle = shuffle, prec = prec)
+    })
+  } else{
+    dataOrdered <- aperm(data$Data, perOrdered)
+    var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval = missval, longname = tmpStdName, compression = compression, shuffle = shuffle, prec = prec)
+  }
   if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
     varProj <- ncvar_def("rotated_pole", units = "", dim = list(), prec = "char")
     ## varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlat,dimlon), longname = "longitude", prec = prec)
@@ -116,29 +139,35 @@ grid2nc <- function(data,
     varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlon,dimlat), longname = "longitude", prec = "double")
     varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlon,dimlat), longname = "latitude", prec = "double")
     if (!is.null(coordBounds)){
-       varLonBounds <- ncvar_def("lon_vertices", units = "degrees_east", dim = list(dimBounds,dimlon,dimlat), longname = "longitude", prec = "double")
-       varLatBounds <- ncvar_def("lat_vertices", units = "degrees_north", dim = list(dimBounds,dimlon,dimlat), longname = "latitude", prec = "double")
+      varLonBounds <- ncvar_def("lon_vertices", units = "degrees_east", dim = list(dimBounds,dimlon,dimlat), longname = "longitude", prec = "double")
+      varLatBounds <- ncvar_def("lat_vertices", units = "degrees_north", dim = list(dimBounds,dimlon,dimlat), longname = "latitude", prec = "double")
     }
-    if (length(member.index) > 0) {
+    if (!isMultigrid(data)) {
+      var <- list(var, varLon, varLat, varProj)
+    } else {
+      var[[length(var)+1]] <- varLon
+      var[[length(var)+1]] <- varLat
+      var[[length(var)+1]] <- varProj
+    }
+    if ((length(member.index) > 0) & (!isMultigrid(data))) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
       }else{
         varMem <- ncvar_def("member", units = "1", dim = list(dimens), prec = "int")
       }
       if (!is.null(coordBounds)){
-         var <- list(var, varLon, varLat, varProj, varLonBounds, varLatBounds, varMem)
-	  }else{
-         var <- list(var, varLon, varLat, varProj, varMem)
-	  }
+        var[[length(var)+1]] <- varLonBounds
+        var[[length(var)+1]] <- varLatBounds
+      }
+      var[[length(var)+1]] <- varMem
     }else{
       if (!is.null(coordBounds)){
-         var <- list(var, varLon, varLat, varProj, varLonBounds, varLatBounds)
-	  }else{
-         var <- list(var, varLon, varLat, varProj)
-	  }
+        var[[length(var)+1]] <- varLonBounds
+        var[[length(var)+1]] <- varLatBounds
+      }
     }
   }else{
-    if (length(member.index) > 0) {
+    if ((length(member.index) > 0) & (!isMultigrid(data))) {
       if (is.character(data$Members)){
         varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
       }else{
@@ -172,7 +201,7 @@ grid2nc <- function(data,
     ncatt_put(ncnew, "lat", "standard_name","latitude")
     ncatt_put(ncnew, "lat", "_CoordinateAxisType","Lat")
   }
-  if (length(member.index) > 0) {
+  if ((length(member.index) > 0) & (!isMultigrid(data))) {
     ncatt_put(ncnew, "member", "standard_name","realization")
     ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
     ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
@@ -185,8 +214,20 @@ grid2nc <- function(data,
     if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
       ncatt_put(ncnew, var[[1]]$name, "grid_mapping", "rotated_pole")
     }
+  }else if (isMultigrid(data)){
+    for (v in c(1:length(tmpStdName))){
+      ncatt_put(ncnew, var[[v]]$name, "missing_value", missval, prec = prec)
+      if (!is.null(varAttributes)) {
+        sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[v]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+      }
+      ncatt_put(ncnew, var[[v]]$name, "description", attributes(data$Variable)$"description"[[v]])
+      ncatt_put(ncnew, var[[v]]$name, "longname", attributes(data$Variable)$"longname"[[v]])
+      if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+        ncatt_put(ncnew, var[[v]]$name, "grid_mapping", "rotated_pole")
+      }
+    }
   }else{
-	if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
       ncatt_put(ncnew, var[[1]]$name, "missing_value", missval, prec = prec)
       if (!is.null(varAttributes)) {
         sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[1]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
@@ -201,7 +242,7 @@ grid2nc <- function(data,
       }
       ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
       ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
-	}
+    }
   }
   ## ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
   z <- attributes(data$Variable$level)
@@ -232,17 +273,23 @@ grid2nc <- function(data,
   ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
   ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
   if ((!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole") | is.character(data$Members)){
-    ncvar_put(ncnew, var[[1]], dataOrdered)
+    for (v in c(1:length(tmpStdName))){
+      ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
+    }
     if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
-      ncvar_put(ncnew, var[[2]], t(data$xyCoords$lon))
-      ncvar_put(ncnew, var[[3]], t(data$xyCoords$lat))
+      ncvar_put(ncnew, var[[length(tmpStdName)+1]], t(data$xyCoords$lon))
+      ncvar_put(ncnew, var[[length(tmpStdName)+2]], t(data$xyCoords$lat))
       if (!is.null(coordBounds)){
-         ncvar_put(ncnew, var[[5]], aperm(coordBounds$lon,c(3,2,1)))
-         ncvar_put(ncnew, var[[6]], aperm(coordBounds$lat,c(3,2,1)))
-	  }
+        ncvar_put(ncnew, var[[length(tmpStdName)+4]], aperm(coordBounds$lon,c(3,2,1)))
+        ncvar_put(ncnew, var[[length(tmpStdName)+5]], aperm(coordBounds$lat,c(3,2,1)))
+      }
     }
     if (is.character(data$Members)){
       ncvar_put(ncnew, var[[length(var)]], data$Members)
+    }
+  }else if (isMultigrid(data)){
+    for (v in c(1:length(tmpStdName))){
+      ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
     }
   }else{
     ncvar_put(ncnew, var, dataOrdered)
