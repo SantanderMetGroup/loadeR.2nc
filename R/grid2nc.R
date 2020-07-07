@@ -111,8 +111,8 @@ grid2nc <- function(data,
     perOrdered <- c(lon.index,lat.index,time.index)
     dimOrdered <- list(dimlon,dimlat,dimtime)
   }
-  if ((transformeR::isMultigrid(data)) & (var.index < min(perOrdered))){
-    perOrdered <- perOrdered - 1
+  if (transformeR::isMultigrid(data)) {
+    if (var.index < min(perOrdered)) perOrdered <- perOrdered - 1
   }
   if (!is.null(coordBounds)){
     dimBounds  <- ncdim_def("vertices", units = "", c(1:4), create_dimvar = FALSE)
