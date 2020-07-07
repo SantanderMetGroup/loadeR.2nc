@@ -170,7 +170,11 @@ grid2nc <- function(data,
       }else{
         varMem <- ncvar_def("member", units = "1", dim = list(dimens), prec = "int")
       }
-      var[[length(var)+1]] <- varMem
+      if (transformeR::isMultigrid(data)) {
+        var[[length(var)+1]] <- varMem
+      } else{
+        var <- list(var, varMem)
+      }
     }
   }
   ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
@@ -294,8 +298,13 @@ grid2nc <- function(data,
   ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
   ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
   if ((!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole") | is.character(data$Members)){
-    for (v in c(1:length(tmpStdName))){
-      ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
+    if (transformeR::isMultigrid(data)){
+      for (v in c(1:length(tmpStdName))){
+        ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
+      }
+    } else {
+      v <- 1
+      ncvar_put(ncnew, var[[v]], dataOrdered)
     }
     if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
       ncvar_put(ncnew, var[[length(tmpStdName)+1]], t(data$xyCoords$lon))
