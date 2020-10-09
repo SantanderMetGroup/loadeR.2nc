@@ -93,6 +93,9 @@ grid2nc <- function(data,
   }
   datesList <- as.POSIXct(startList, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
   if (all(is.na(datesList))) datesList <- as.POSIXct(startList, tz = "GMT")
+  if ((length(grep(":00:00 GMT",startList))==0) & ((length(grep("GMT",startList))!=0))){
+    startList <- gsub(startList, pattern = "00:00:00 GMT", replacement = "GMT")
+  } 
   times <- (as.double(datesList) - as.double(datesList[1])) / 86400
   dimtime <- ncdim_def("time", paste("days since", startList[1]), times, unlim = FALSE, calendar = "gregorian", create_dimvar = TRUE)
   if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
