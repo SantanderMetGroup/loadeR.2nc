@@ -1,6 +1,6 @@
 Package: loadeR.2nc
 Depends:
-    R(>= 3.5.0)    
+    R(>= 3.5.0)
 Imports:
     ncdf4
 Suggests:
