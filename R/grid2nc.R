@@ -244,7 +244,24 @@ grid2nc <- function(data,
     ncatt_put(ncnew, varProj$name, "grid_mapping_name","lambert_conformal_conic")
     ncatt_put(ncnew, varProj$name, "latitude_of_projection_origin",as.numeric(attr(data$xyCoords, "latitude_of_projection_origin")))
     ncatt_put(ncnew, varProj$name, "longitude_of_central_meridian",as.numeric(attr(data$xyCoords, "longitude_of_central_meridian")))
-    ncatt_put(ncnew, varProj$name, "standard_parallel",as.numeric(attr(data$xyCoords, "standard_parallel")))
+    if (length(grep("par2", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0 ){
+      ch <- strsplit(attr(data$xyCoords, "projection"), ",")
+      par1 <- strsplit(ch[[1]][grep("par1",ch[[1]])],"=")
+      par2 <- strsplit(ch[[1]][grep("par2",ch[[1]])],"=")
+      ncatt_put(ncnew, varProj$name, "standard_parallel",c(as.numeric(par1[[1]][2]),as.numeric(par2[[1]][2])))
+    }else{
+      ncatt_put(ncnew, varProj$name, "standard_parallel",as.numeric(attr(data$xyCoords, "standard_parallel")))
+    }
+    if (length(grep("falseEasting", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0 ){
+      ch <- strsplit(attr(data$xyCoords, "projection"), ",")
+      par1 <- strsplit(ch[[1]][grep("falseEasting",ch[[1]])],"=")
+      ncatt_put(ncnew, varProj$name, "false_easting",as.numeric(par1[[1]][2]))
+    }
+    if (length(grep("falseNorthing", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0 ){
+      ch <- strsplit(attr(data$xyCoords, "projection"), ",")
+      par1 <- strsplit(gsub("}"," ",ch[[1]][grep("falseNorthing",ch[[1]])]),"=")
+      ncatt_put(ncnew, varProj$name, "false_northing",as.numeric(par1[[1]][2]))
+    }
     ncatt_put(ncnew, varLon$name, "standard_name","longitude")
     ncatt_put(ncnew, varLon$name, "_CoordinateAxisType","Lon")
     ncatt_put(ncnew, varLat$name, "standard_name","latitude")
