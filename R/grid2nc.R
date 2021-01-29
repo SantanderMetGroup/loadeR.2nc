@@ -101,6 +101,9 @@ grid2nc <- function(data,
   if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
     dimlon  <- ncdim_def("rlon", units = "degrees", data$xyCoords$x, longname = "longitude in rotated pole grid", create_dimvar = TRUE)
     dimlat  <- ncdim_def("rlat", units = "degrees", data$xyCoords$y, longname = "latitude in rotated pole grid", create_dimvar = TRUE)
+  }else if (!is.null(attr(data$xyCoords, "projection")) & (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0)){
+    dimlon  <- ncdim_def("x", units = "m", data$xyCoords$x, longname = "x coordinate of projection", create_dimvar = TRUE)
+    dimlat  <- ncdim_def("y", units = "m", data$xyCoords$y, longname = "y coordinate of projection", create_dimvar = TRUE)
   }else{
     dimlon  <- ncdim_def("lon", units = "degrees_east", data$xyCoords$x, longname = "longitude", create_dimvar = TRUE)
     dimlat  <- ncdim_def("lat", units = "degrees_north", data$xyCoords$y, longname = "latitude", create_dimvar = TRUE)
@@ -166,6 +169,38 @@ grid2nc <- function(data,
         var[[length(var)+1]] <- varLatBounds
       }
     }
+  }else if (!is.null(attr(data$xyCoords, "projection")) & (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0)){
+    varProj <- ncvar_def("LambertConformal", units = "", dim = list(), prec = "char")
+    varLon <- ncvar_def("lon", units = "degrees_east", dim = list(dimlon,dimlat), longname = "longitude", prec = "double")
+    varLat <- ncvar_def("lat", units = "degrees_north", dim = list(dimlon,dimlat), longname = "latitude", prec = "double")
+    if (!is.null(coordBounds)){
+      varLonBounds <- ncvar_def("lon_vertices", units = "degrees_east", dim = list(dimBounds,dimlon,dimlat), longname = "longitude", prec = "double")
+      varLatBounds <- ncvar_def("lat_vertices", units = "degrees_north", dim = list(dimBounds,dimlon,dimlat), longname = "latitude", prec = "double")
+    }
+    if (!transformeR::isMultigrid(data)) {
+      var <- list(var, varLon, varLat, varProj)
+    } else {
+      var[[length(var)+1]] <- varLon
+      var[[length(var)+1]] <- varLat
+      var[[length(var)+1]] <- varProj
+    }
+    if (length(member.index) > 0) {
+      if (is.character(data$Members)){
+        varMem <- ncvar_def("member", units = "", dim = list(dimnchar,dimens), prec = "char")
+      }else{
+        varMem <- ncvar_def("member", units = "1", dim = list(dimens), prec = "int")
+      }
+      if (!is.null(coordBounds)){
+        var[[length(var)+1]] <- varLonBounds
+        var[[length(var)+1]] <- varLatBounds
+      }
+      var[[length(var)+1]] <- varMem
+    }else{
+      if (!is.null(coordBounds)){
+        var[[length(var)+1]] <- varLonBounds
+        var[[length(var)+1]] <- varLatBounds
+      }
+    }
   }else{
     if (length(member.index) > 0) {
       if (is.character(data$Members)){
@@ -199,7 +234,22 @@ grid2nc <- function(data,
     ncatt_put(ncnew, varLon$name, "_CoordinateAxisType","Lon")
     ncatt_put(ncnew, varLat$name, "standard_name","latitude")
     ncatt_put(ncnew, varLat$name, "_CoordinateAxisType","Lat")
-  }else{
+  }else if (!is.null(attr(data$xyCoords, "projection")) & (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0)){
+    ncatt_put(ncnew, "x", "standard_name","projection_x_coordinate")
+    ncatt_put(ncnew, "x", "axis","X")
+    ncatt_put(ncnew, "y", "standard_name","projection_y_coordinate")
+    ncatt_put(ncnew, "y", "axis","Y")
+    # ncatt_put(ncnew, "rlon", "_CoordinateAxisType","GeoX")
+    # ncatt_put(ncnew, "rlat", "_CoordinateAxisType","GeoY")
+    ncatt_put(ncnew, varProj$name, "grid_mapping_name","lambert_conformal_conic")
+    ncatt_put(ncnew, varProj$name, "latitude_of_projection_origin",as.numeric(attr(data$xyCoords, "latitude_of_projection_origin")))
+    ncatt_put(ncnew, varProj$name, "longitude_of_central_meridian",as.numeric(attr(data$xyCoords, "longitude_of_central_meridian")))
+    ncatt_put(ncnew, varProj$name, "standard_parallel",as.numeric(attr(data$xyCoords, "standard_parallel")))
+    ncatt_put(ncnew, varLon$name, "standard_name","longitude")
+    ncatt_put(ncnew, varLon$name, "_CoordinateAxisType","Lon")
+    ncatt_put(ncnew, varLat$name, "standard_name","latitude")
+    ncatt_put(ncnew, varLat$name, "_CoordinateAxisType","Lat")
+  } else{
     ncatt_put(ncnew, "lon", "standard_name","longitude")
     ncatt_put(ncnew, "lon", "_CoordinateAxisType","Lon")
     ncatt_put(ncnew, "lat", "standard_name","latitude")
@@ -230,7 +280,7 @@ grid2nc <- function(data,
       }
     }
   }else{
-    if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    if ((!is.null(attr(data$xyCoords, "projection"))) & ((attr(data$xyCoords, "projection") == "RotatedPole") | (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0))){
       Nvar <- 1
       if (transformeR::isMultigrid(data)){
         Nvar <- length(tmpStdName)
@@ -249,6 +299,8 @@ grid2nc <- function(data,
         }
         if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
           ncatt_put(ncnew, var[[v]]$name, "grid_mapping", "rotated_pole")
+        }else if (!is.null(attr(data$xyCoords, "projection")) & (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0)){
+          ncatt_put(ncnew, var[[v]]$name, "grid_mapping", "lambert_conformal_conic")
         }
       }
     }else{
@@ -300,7 +352,7 @@ grid2nc <- function(data,
   }
   ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
   ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
-  if ((!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole") | is.character(data$Members)){
+  if (((!is.null(attr(data$xyCoords, "projection"))) & ((attr(data$xyCoords, "projection") == "RotatedPole") | (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0)))  | is.character(data$Members)){
     if (transformeR::isMultigrid(data)){
       for (v in c(1:length(tmpStdName))){
         ncvar_put(ncnew, var[[v]], dataOrdered[[v]])
@@ -309,7 +361,7 @@ grid2nc <- function(data,
       v <- 1
       ncvar_put(ncnew, var[[v]], dataOrdered)
     }
-    if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
+    if ((!is.null(attr(data$xyCoords, "projection"))) & ((attr(data$xyCoords, "projection") == "RotatedPole") | (length(grep("LambertConformal", attr(data$xyCoords, "projection"), ignore.case = TRUE)) > 0))){
       ncvar_put(ncnew, var[[length(tmpStdName)+1]], t(data$xyCoords$lon))
       ncvar_put(ncnew, var[[length(tmpStdName)+2]], t(data$xyCoords$lat))
       if (!is.null(coordBounds)){
