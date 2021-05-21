@@ -1,7 +1,26 @@
 loadeR.2nc
 ==========
 
+## v0.0.0 (22 Feb 2016)
+* First package release
+
+## v0.0.1 (23 Feb 2016)
+* Bug fix in date definition, affecting monthly datasets only
+
+## v0.0.2 (9 Feb 2018)
 * Bug fix in the placement of global attributes
 * Update installed example dataset to convey the current climate4R grid attributes and reduce its size
 * Other minor documentation updates
+
+## v0.1.0 (5 Jul 2018)
+* New function to export climate4R station object grids
+
+## v0.1.1 (24 Feb 2020)
+* Allow member dimension writing as character
+* Other enhancements
+
+## v0.1.2
+* Original global attributes "long_name", "name" and "units" overriden by optional globalAttributes argument values
+* Other minor internal changes and documentation updates
+
 

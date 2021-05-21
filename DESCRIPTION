@@ -1,17 +1,18 @@
 Package: loadeR.2nc
 Depends:
-    R(>= 3.0.0),    
+    R (>=3.0.0),    
 Imports:
     ncdf4,
 Suggests:
     downscaleR,
 Extends:
     loadeR,
-    loadeR.ECOMS
+    loadeR.ECOMS,
+    transformeR
 Type: Package
-Title: A loadeR bundle extension for exporting to netCDF
-Version: 0.0.2
-Date: 2018-02-09
+Title: netCDF export extension for climate4R grid objects
+Version: 0.1.2
+Date: 2021-05-21
 Authors@R: as.person(c(
     "Santander Meteorology Group <http://meteo.unican.es> [cph]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
@@ -21,6 +22,6 @@ Authors@R: as.person(c(
 BugReports: https://github.com/SantanderMetGroup/loadeR.2nc/issues
 URL: https://github.com/SantanderMetGroup/loadeR/wiki
 Encoding: UTF-8
-Description: Write climate4R grids to netCDF files (http://www.meteo.unican.es/climate4R).
+Description: Write climate4R grids to netCDF files <https://github.com/SantanderMetGroup/>
 License: file LICENSE
-RoxygenNote: 6.0.1
+RoxygenNote: 7.1.1
