@@ -75,23 +75,23 @@ grid2nc <- function(data,
       prec <- match.arg(prec, choices =  c("float", "short", "double", "text"))
       
       # Global attribute defs
-      tmpStdName <- if (is.null(globalAttributes[["name"]])) {
+      tmpStdName <- if (is.null(varAttributes[["name"]])) {
             data$Variable$varName
       } else {
-            message("[", Sys.time(), "] The original \'name\' attribute was overriden by the value specified in the global attr list")
-            globalAttributes[["units"]]
+            message("[", Sys.time(), "] The original \'name\' attribute was overriden by the value specified in the variable attr list")
+            varAttributes[["units"]]
       }
-      tmpUnits <- if (is.null(globalAttributes[["units"]])) {
+      tmpUnits <- if (is.null(varAttributes[["units"]])) {
             attributes(data$Variable)$"units"   
       } else {
-            message("[", Sys.time(), "] The original \'units\' attribute was overriden by the value specified in the global attr list")
-            globalAttributes[["units"]]
+            message("[", Sys.time(), "] The original \'units\' attribute was overriden by the value specified in the variable attr list")
+            varAttributes[["units"]]
       }
-      tmpLongName <- if (is.null(globalAttributes[["long_name"]])) {
+      tmpLongName <- if (is.null(varAttributes[["long_name"]])) {
             attr(data$Variable, "longname")   
       } else {
-            message("[", Sys.time(), "] The original \'longname\' attribute was overriden by the value specified in the global attr list")
-            globalAttributes[["long_name"]]
+            message("[", Sys.time(), "] The original \'longname\' attribute was overriden by the value specified in the variable attr list")
+            varAttributes[["long_name"]]
       }
       if (is.null(tmpLongName)) tmpLongName <- tmpStdName ## Assign shortname if longname is missing
       
