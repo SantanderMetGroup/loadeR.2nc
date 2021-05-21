@@ -1,6 +1,6 @@
-# grid2nc.R Export loadeR grids to netCDF
+#     grid2nc.R Export climate4R grids to netCDF
 #
-#     Copyright (C) 2018 Santander Meteorology Group (http://www.meteo.unican.es)
+#     Copyright (C) 2021 Santander Meteorology Group (http://www.meteo.unican.es)
 #
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -17,12 +17,7 @@
 
 #' @title Grid 2 netCDF export
 #' @description Export a loadeR grid to NetCDF
-#' @importFrom ncdf4 ncdim_def 
-#' @importFrom ncdf4 ncvar_def 
-#' @importFrom ncdf4 nc_create 
-#' @importFrom ncdf4 ncatt_put 
-#' @importFrom ncdf4 ncvar_put
-#' @importFrom ncdf4 nc_close
+#' @importFrom ncdf4 ncdim_def ncvar_def nc_create ncatt_put ncvar_put nc_close
 #' @param data A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})
 #' @param NetCDFOutFile Name of the file created by the function. (default to \code{"out.nc4"})
 #' @param missval Missing value codification (default to \code{1e20})
@@ -76,8 +71,30 @@ grid2nc <- function(data,
                     compression = 4,
                     shuffle = FALSE,
                     verbose = FALSE) {
-      tmpStdName <- data$Variable$varName
-      tmpUnits <- attributes(data$Variable)$"units"
+      
+      prec <- match.arg(prec, choices =  c("float", "short", "double", "text"))
+      
+      # Global attribute defs
+      tmpStdName <- if (is.null(globalAttributes[["name"]])) {
+            data$Variable$varName
+      } else {
+            message("[", Sys.time(), "] The original \'name\' attribute was overriden by the value specified in the global attr list")
+            globalAttributes[["units"]]
+      }
+      tmpUnits <- if (is.null(globalAttributes[["units"]])) {
+            attributes(data$Variable)$"units"   
+      } else {
+            message("[", Sys.time(), "] The original \'units\' attribute was overriden by the value specified in the global attr list")
+            globalAttributes[["units"]]
+      }
+      tmpLongName <- if (is.null(globalAttributes[["long_name"]])) {
+            attr(data$Variable, "longname")   
+      } else {
+            message("[", Sys.time(), "] The original \'longname\' attribute was overriden by the value specified in the global attr list")
+            globalAttributes[["long_name"]]
+      }
+      if (is.null(tmpLongName)) tmpLongName <- tmpStdName ## Assign shortname if longname is missing
+      
       time.index <- grep("^time$", attr(data$Data, "dimensions"))
       lon.index <- grep("^lon$", attr(data$Data, "dimensions"))
       lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
@@ -97,7 +114,7 @@ grid2nc <- function(data,
             dimOrdered <- list(dimlon,dimlat,dimtime)
       }
       dataOrdered <- aperm(data$Data, perOrdered)
-      var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, longname = tmpStdName, compression = compression, shuffle = shuffle)
+      var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, longname = tmpLongName, compression = compression, shuffle = shuffle)
       ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
       ncatt_put(ncnew, "time", "standard_name","time")
       ncatt_put(ncnew, "time", "axis","T")
@@ -139,7 +156,7 @@ grid2nc <- function(data,
       if (length(attr(data, "source")) > 0) {
             ncatt_put(ncnew, 0, "source", attr(data, "source"))
       }
-      ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
+      ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc <https://github.com/SantanderMetGroup/loadeR.2nc>")
       ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
       ncvar_put(ncnew, var, dataOrdered)
       nc_close(ncnew)
