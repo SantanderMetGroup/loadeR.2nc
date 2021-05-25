@@ -19,8 +19,10 @@ loadeR.2nc
 * Allow member dimension writing as character
 * Other enhancements
 
-## v0.1.2
-* Original global attributes "long_name", "name" and "units" overriden by optional globalAttributes argument values
+## v1.0.0 (25 May 2021)
+* New variable attribute list structure to include attribute precision (No backwards compatibility!)
+* Force nc_close on exit
+* Allow overwriting variable attributes "long_name", "name" and "units" by optional globalAttributes argument values
 * Other minor internal changes and documentation updates
 
 

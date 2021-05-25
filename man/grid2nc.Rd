@@ -4,9 +4,17 @@
 \alias{grid2nc}
 \title{Grid 2 netCDF export}
 \usage{
-grid2nc(data, NetCDFOutFile = "out.nc4", missval = 1e+20,
-  globalAttributes = NULL, varAttributes = NULL, prec = "float",
-  compression = 4, shuffle = FALSE, verbose = FALSE)
+grid2nc(
+  data,
+  NetCDFOutFile = "out.nc4",
+  missval = 1e+20,
+  globalAttributes = NULL,
+  varAttributes = NULL,
+  prec = NULL,
+  compression = 4,
+  shuffle = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{data}{A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})}
@@ -18,7 +26,7 @@ grid2nc(data, NetCDFOutFile = "out.nc4", missval = 1e+20,
 \item{globalAttributes}{Optional. A list of global attributes included in the NetCDF file. Same format as \code{varAttributes}.}
 
 \item{varAttributes}{Optional. List of attributes to be included in the variable written in the NetCDF file. Default to \code{NULL}.
-It has the format \code{list("name_of_attribute1" = attribute1, "name_of_attribute2" = attribute2} etc.}
+It has the format \code{list("name_of_attribute1" = list(attribute1, prec of attribute1), "name_of_attribute2" = list(attribute1, prec of attribute1)} etc.}
 
 \item{prec}{Precision to write the attribute. If not specified, the written precision is given by the variable's
 corresponding attribute. This can be overridden by specifying the following argument values:
@@ -47,11 +55,15 @@ Export a loadeR grid to NetCDF
 library(loadeR.2nc)
 data(tx) # A climate4R grid
 # Name of output file:
-fileName <- "tasmax_WFDEI_JJA_W2001_2010.nc4"
+fileName <- "/tmp/tasmax_WFDEI_JJA_W2001_2010.nc"
 # Including a global attribute:
-globalAttributeList <- list("institution" = "SantanderMetGroup, http://www.meteo.unican.es/")
-# Including two variable attributes:
-varAttributeList <- list(var_attr1 = "one_attribute", var_attr2 = "another_attribute")
+globalAttributeList <- list("title" = "Daily mean maximum temperature data from the WFDEI Database over Southern Europe used as an example of netCDF export from climate4R",
+                            "institution" = "SantanderMetGroup, <http://www.meteo.unican.es>", 
+                            "source" = "climate4R <https://github.com/SantanderMetGroup/climate4R>")
+# Including variable attributes. The last one not really correct, but for illustration purpose:
+varAttributeList <- list("name" = list("tasmax", prec = "text"),
+                         "description" = list("Daily maximum near surface air temperature", prec = "text"),
+                         "level" = list(2L, prec = "short"))
 # Create file:
 grid2nc(data = tx,
         NetCDFOutFile = fileName,

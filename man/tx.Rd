@@ -4,7 +4,9 @@
 \name{tx}
 \alias{tx}
 \title{Maximum temperature daily grid dataset}
-\format{a climate4R grid}
+\format{
+a climate4R grid
+}
 \source{
 Data from the WATCH Forcing Dataset ERA-Interim (Weedon et al. 2011) retrieved from the ECOMS User Data Gateway (\url{http://meteo.unican.es/ecoms-udg}).
 }
