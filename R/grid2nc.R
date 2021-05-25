@@ -23,7 +23,7 @@
 #' @param missval Missing value codification (default to \code{1e20})
 #' @param globalAttributes Optional. A list of global attributes included in the NetCDF file. Same format as \code{varAttributes}.
 #' @param varAttributes Optional. List of attributes to be included in the variable written in the NetCDF file. Default to \code{NULL}.
-#' It has the format \code{list("name_of_attribute1" = attribute1, "name_of_attribute2" = attribute2} etc.
+#' It has the format \code{list("name_of_attribute1" = list(attribute1, prec of attribute1), "name_of_attribute2" = list(attribute1, prec of attribute1)} etc.
 #' @param prec Precision to write the attribute. If not specified, the written precision is given by the variable's
 #' corresponding attribute. This can be overridden by specifying the following argument values:
 #'  \code{"short"}, \code{"float"}, \code{"double"}, or \code{"text"}.
@@ -47,11 +47,15 @@
 #' library(loadeR.2nc)
 #' data(tx) # A climate4R grid
 #' # Name of output file:
-#' fileName <- "tasmax_WFDEI_JJA_W2001_2010.nc4"
+#' fileName <- "/tmp/tasmax_WFDEI_JJA_W2001_2010.nc"
 #' # Including a global attribute:
-#' globalAttributeList <- list("institution" = "SantanderMetGroup, http://www.meteo.unican.es/")
-#' # Including two variable attributes:
-#' varAttributeList <- list(var_attr1 = "one_attribute", var_attr2 = "another_attribute")
+#' globalAttributeList <- list("title" = "Daily mean maximum temperature data from the WFDEI Database over Southern Europe used as an example of netCDF export from climate4R",
+#'                             "institution" = "SantanderMetGroup, <http://www.meteo.unican.es>", 
+#'                             "source" = "climate4R <https://github.com/SantanderMetGroup/climate4R>")
+#' # Including variable attributes. The last one not really correct, but for illustration purpose:
+#' varAttributeList <- list("name" = list("tasmax", prec = "text"),
+#'                          "description" = list("Daily maximum near surface air temperature", prec = "text"),
+#'                          "level" = list(2L, prec = "short"))
 #' # Create file:
 #' grid2nc(data = tx,
 #'         NetCDFOutFile = fileName,
@@ -67,7 +71,7 @@ grid2nc <- function(data,
                     missval = 1e20,
                     globalAttributes = NULL,
                     varAttributes = NULL,
-                    prec = "float",
+                    prec = NULL,
                     compression = 4,
                     shuffle = FALSE,
                     verbose = FALSE) {
@@ -75,23 +79,23 @@ grid2nc <- function(data,
       prec <- match.arg(prec, choices =  c("float", "short", "double", "text"))
       
       # Global attribute defs
-      tmpStdName <- if (is.null(varAttributes[["name"]])) {
-            data$Variable$varName
+      if (is.null(varAttributes[["name"]])) {
+            tmpStdName <- data$Variable$varName
       } else {
             message("[", Sys.time(), "] The original \'name\' attribute was overriden by the value specified in the variable attr list")
-            varAttributes[["units"]]
+            tmpStdName <- varAttributes[["name"]][[1]]
       }
-      tmpUnits <- if (is.null(varAttributes[["units"]])) {
-            attributes(data$Variable)$"units"   
+      if (is.null(varAttributes[["units"]])) {
+            tmpUnits <- attributes(data$Variable)$"units"   
       } else {
             message("[", Sys.time(), "] The original \'units\' attribute was overriden by the value specified in the variable attr list")
-            varAttributes[["units"]]
+            tmpUnits <- varAttributes[["units"]][[1]]
       }
-      tmpLongName <- if (is.null(varAttributes[["long_name"]])) {
-            attr(data$Variable, "longname")   
+      if (is.null(varAttributes[["long_name"]])) {
+            tmpLongName <- attr(data$Variable, "longname")   
       } else {
             message("[", Sys.time(), "] The original \'longname\' attribute was overriden by the value specified in the variable attr list")
-            varAttributes[["long_name"]]
+            tmpLongName <- varAttributes[["long_name"]][[1]]
       }
       if (is.null(tmpLongName)) tmpLongName <- tmpStdName ## Assign shortname if longname is missing
       
@@ -114,8 +118,16 @@ grid2nc <- function(data,
             dimOrdered <- list(dimlon,dimlat,dimtime)
       }
       dataOrdered <- aperm(data$Data, perOrdered)
-      var <- ncvar_def(data$Variable$varName, units = tmpUnits, dim = dimOrdered, missval, longname = tmpLongName, compression = compression, shuffle = shuffle)
+      var <- ncvar_def(name = tmpStdName,
+                       units = tmpUnits,
+                       dim = dimOrdered,
+                       missval = missval,
+                       longname = tmpLongName,
+                       prec = prec,
+                       compression = compression,
+                       shuffle = shuffle)
       ncnew <- nc_create(NetCDFOutFile, var, verbose = verbose)
+      on.exit(nc_close(ncnew))
       ncatt_put(ncnew, "time", "standard_name","time")
       ncatt_put(ncnew, "time", "axis","T")
       ncatt_put(ncnew, "time", "_CoordinateAxisType","Time")
@@ -129,12 +141,23 @@ grid2nc <- function(data,
             ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
             ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
       }
-      ncatt_put(ncnew, data$Variable$varName, "missing_value", missval)
+      ncatt_put(ncnew, tmpStdName, "missing_value", missval)
       if (!is.null(varAttributes)) {
-            sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
+            sapply(1:length(varAttributes), function(x) {
+                  prec1 <- if (is.null(varAttributes[[x]][["prec"]])) {
+                        NA
+                  } else {
+                        varAttributes[[x]][["prec"]]
+                  }
+                  ncatt_put(nc = ncnew, 
+                            varid = var$name,
+                            attname =  names(varAttributes)[x],
+                            attval = as.character(varAttributes[[x]]),
+                            prec = prec1)
+            })
       }
-      ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
-      ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
+      if (is.null(varAttributes[["description"]])) ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
+      if (is.null(varAttributes[["long_name"]])) ncatt_put(ncnew, var$name, "long_name", attributes(data$Variable)$"longname")
       z <- attributes(data$Variable$level)
       if (!is.null(z)) ncatt_put(ncnew, var$name, "level", z)
       if (!is.null(globalAttributes)) {      
@@ -159,7 +182,6 @@ grid2nc <- function(data,
       ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc <https://github.com/SantanderMetGroup/loadeR.2nc>")
       ncatt_put(ncnew, 0, "Conventions", "CF-1.4")
       ncvar_put(ncnew, var, dataOrdered)
-      nc_close(ncnew)
       message("[", Sys.time(), "] NetCDF file written in: ", NetCDFOutFile)
 }
 
