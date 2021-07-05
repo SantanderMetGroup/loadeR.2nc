@@ -11,8 +11,8 @@ Extends:
     loadeR.ECOMS
 Type: Package
 Title: A loadeR bundle extension for exporting to netCDF
-Version: 0.1.1
-Date: 2020-02-24
+Version: 0.1.2
+Date: 2021-07-05
 Authors@R: as.person(c(
     "Santander Meteorology Group <http://meteo.unican.es> [cph]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
