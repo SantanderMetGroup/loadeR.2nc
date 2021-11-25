@@ -3,7 +3,7 @@ Depends:
     R(>= 3.5.0)
 Imports:
     ncdf4,
-      transformeR
+    transformeR
 Suggests:
     downscaleR
 Extends:
@@ -12,7 +12,7 @@ Extends:
 Type: Package
 Title: A loadeR bundle extension for exporting to netCDF
 Version: 0.1.2
-Date: 2021-07-05
+Date: 2021-11-25
 Authors@R: as.person(c(
     "Santander Meteorology Group <http://meteo.unican.es> [cph]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
@@ -20,8 +20,8 @@ Authors@R: as.person(c(
     "Maialen Iturbide <miturbide@ifca.unican.es> [ctb]",
     "Wietse Franssen <wietse.franssen@wur.nl> [ctb]"))
 BugReports: https://github.com/SantanderMetGroup/loadeR.2nc/issues
-URL: https://github.com/SantanderMetGroup/loadeR/wiki
+URL: https://github.com/SantanderMetGroup/loadeR.2nc
 Encoding: UTF-8
 Description: Write climate4R grids to netCDF files (http://www.meteo.unican.es/climate4R).
 License: file LICENSE
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1

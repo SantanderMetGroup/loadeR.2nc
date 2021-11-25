@@ -2,7 +2,7 @@
 % Please edit documentation in R/grid2nc.R
 \name{grid2nc}
 \alias{grid2nc}
-\title{Grid 2 netCDF export}
+\title{climate4R grid 2 netCDF export}
 \usage{
 grid2nc(
   data,
@@ -54,7 +54,15 @@ According to netcdf documentation, turning the shuffle filter on can improve com
 A NetCDF-4 file with the variable and attributes defined in the inputs.
 }
 \description{
-Export a loadeR grid to NetCDF
+Export a climate4R grid to NetCDF
+}
+\details{
+\strong{netCDF attributes}
+It is highly advised that an authoritative attribute convention is followed, such as CF and ESIP:
+\itemize{
+\item \url{https://cfconventions.org/}
+\item \url{https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#creator_url}
+}
 }
 \examples{
 \dontrun{
@@ -73,6 +81,8 @@ grid2nc(data = tx,
         prec = "float",
         globalAttributes = globalAttributeList,
         varAttributes = varAttributeList)
+# Inspection fo the file: Requires nectcdf-bin installed in your system:
+system("ncdump -h tasmax_WFDEI_JJA_W2001_2010.nc4")
 }
 }
 \references{
