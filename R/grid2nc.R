@@ -1,6 +1,6 @@
-# grid2nc.R Export loadeR grids to netCDF
+#     grid2nc.R Export loadeR grids to netCDF
 #
-#     Copyright (C) 2018 Santander Meteorology Group (http://www.meteo.unican.es)
+#     Copyright (C) 2021 Santander Meteorology Group (http://www.meteo.unican.es)
 #
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -17,12 +17,7 @@
 
 #' @title Grid 2 netCDF export
 #' @description Export a loadeR grid to NetCDF
-#' @importFrom ncdf4 ncdim_def 
-#' @importFrom ncdf4 ncvar_def 
-#' @importFrom ncdf4 nc_create 
-#' @importFrom ncdf4 ncatt_put 
-#' @importFrom ncdf4 ncvar_put
-#' @importFrom ncdf4 nc_close
+#' @importFrom ncdf4 ncdim_def ncvar_def nc_create ncatt_put ncvar_put nc_close
 #' @import transformeR
 #' @param data A climate4R grid data object (\url{http://www.meteo.unican.es/climate4R})
 #' @param NetCDFOutFile Name of the file created by the function. (default to \code{"out.nc4"})
@@ -78,19 +73,37 @@ grid2nc <- function(data,
                     compression = 4,
                     shuffle = FALSE,
                     verbose = FALSE,
-                    gridNorthPole = c("39.25","-162.0"), coordBounds = NULL) {
-  tmpStdName <- data$Variable$varName
-  tmpUnits <- attributes(data$Variable)$"units"
+                    gridNorthPole = c("39.25","-162.0"),
+                    coordBounds = NULL) {
+   
+  prec <- match.arg(prec, choices =  c("float", "short", "double", "text"))
+  # Global attribute defs
+  if (is.null(varAttributes[["name"]])) {
+     tmpStdName <- data$Variable$varName
+  } else {
+     message("[", Sys.time(), "] The original \'name\' attribute was overriden by the value specified in the variable attr list")
+     tmpStdName <- varAttributes[["name"]][[1]]
+  }
+  if (is.null(varAttributes[["units"]])) {
+     tmpUnits <- attributes(data$Variable)$"units"   
+  } else {
+     message("[", Sys.time(), "] The original \'units\' attribute was overriden by the value specified in the variable attr list")
+     tmpUnits <- varAttributes[["units"]][[1]]
+  }
+  if (is.null(varAttributes[["long_name"]])) {
+     tmpLongName <- attr(data$Variable, "longname")   
+  } else {
+     message("[", Sys.time(), "] The original \'long_name\' attribute was overriden by the value specified in the variable attr list")
+     tmpLongName <- varAttributes[["long_name"]][[1]]
+  }
+  if (is.null(tmpLongName)) tmpLongName <- tmpStdName ## Assign shortname if longname is missing
+  
   time.index <- grep("^time$", attr(data$Data, "dimensions"))
   lon.index <- grep("^lon$", attr(data$Data, "dimensions"))
   lat.index <- grep("^lat$", attr(data$Data, "dimensions"))
   member.index <- grep("^member$", attr(data$Data, "dimensions"))
   var.index <- grep("^var$", attr(data$Data, "dimensions"))
-  if (transformeR::isMultigrid(data)){
-    startList <- data$Dates[[1]]$start
-  }else{
-    startList <- data$Dates$start
-  }
+  startList <- transformeR::getRefDates(data, "start")
   datesList <- as.POSIXct(startList, tz = "GMT", format = "%Y-%m-%d %H:%M:%S")
   if (all(is.na(datesList))) datesList <- as.POSIXct(startList, tz = "GMT")
   if ((length(grep(":00:00 GMT",startList))==0) & ((length(grep("GMT",startList))!=0))){
@@ -329,7 +342,7 @@ grid2nc <- function(data,
             sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var[[v]]$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
           }
           ncatt_put(ncnew, var[[v]]$name, "description", attributes(data$Variable)$"description"[[v]])
-          ncatt_put(ncnew, var[[v]]$name, "longname", attributes(data$Variable)$"longname"[[v]])
+          ncatt_put(ncnew, var[[v]]$name, "long_name", attributes(data$Variable)$"longname"[[v]])
         }
       } else {
         ncatt_put(ncnew, var$name, "missing_value", missval, prec = prec)
@@ -337,7 +350,7 @@ grid2nc <- function(data,
           sapply(1:length(varAttributes), function(x) ncatt_put(ncnew, var$name, names(varAttributes)[x], as.character(varAttributes[[x]])))
         }
         ncatt_put(ncnew, var$name, "description", attributes(data$Variable)$"description")
-        ncatt_put(ncnew, var$name, "longname", attributes(data$Variable)$"longname")
+        ncatt_put(ncnew, var$name, "long_name", attributes(data$Variable)$"longname")
       }
     }
   }
