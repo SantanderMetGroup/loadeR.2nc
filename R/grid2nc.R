@@ -442,8 +442,11 @@ grid2nc <- function(data,
   if (length(attr(data, "source")) > 0) {
     ncatt_put(ncnew, 0, "source", attr(data, "source"))
   }
-  ncatt_put(ncnew, 0, "Origin", "NetCDF file created by loadeR.2nc: https://github.com/SantanderMetGroup/loadeR.2nc")
-  ncatt_put(ncnew, 0, "Conventions", "CF-1.8, ACDD-1.3")
+  ncatt_put(ncnew, 0, "acknowledgement", "NetCDF file created by loadeR.2nc, a package of the open-source climate4R framework: https://github.com/SantanderMetGroup/climate4R")
+  if (is.null(globalAttributes[["Conventions"]])) {
+     ncatt_put(ncnew, 0, "Conventions", "CF-1.8, ACDD-1.3")   
+  }
+  
   if (((!is.null(attr(data$xyCoords,
                       "projection"))) & ((attr(data$xyCoords,
                                                "projection") == "RotatedPole") | (length(grep("LambertConformal",
