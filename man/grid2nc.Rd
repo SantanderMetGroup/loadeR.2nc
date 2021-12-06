@@ -58,11 +58,14 @@ Export a climate4R grid to NetCDF
 }
 \details{
 \strong{netCDF attributes}
-It is highly advised that an authoritative attribute convention is followed, such as CF and ESIP:
+Some attributes are automatically inferred by the function from the climate4R input grid metadata.
+These can be replaced by user-defined attributes via the global and/or variable attribute lists.
+It is highly advised that an authoritative attribute convention is followed, such as CF and/or ESIP:
 \itemize{
 \item \url{https://cfconventions.org/}
 \item \url{https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#creator_url}
 }
+This conventions are indicated by default in the global attributes of the output.
 }
 \examples{
 \dontrun{

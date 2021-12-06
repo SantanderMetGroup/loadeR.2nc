@@ -12,7 +12,7 @@ Extends:
 Type: Package
 Title: A loadeR bundle extension for exporting to netCDF
 Version: 0.1.3
-Date: 2021-12-05
+Date: 2021-12-06
 Authors@R: as.person(c(
     "Santander Meteorology Group <http://meteo.unican.es> [cph]",
     "Joaquin Bedia <bediaj@unican.es> [ctb,cre]",
