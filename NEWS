@@ -26,3 +26,6 @@ For earlier version changes, see the GitHub Releases [Tab](https://github.com/Sa
 ## v0.1.3 (06 Dec 2021)
 * Internal enhancements, doc updates and minor bug fixes
 * Update default convention global attribute ("CF-1.8, ACDD-1.3")
+
+## v0.1.4 (in devel)
+* Minor change to adapt the "days since" attribute string for netcdf-java interpretability
