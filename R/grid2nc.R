@@ -123,8 +123,13 @@ grid2nc <- function(data,
    if ((length(grep(":00:00 GMT",startList)) == 0) & ((length(grep("GMT",startList)) != 0))) {
       startList <- gsub(startList, pattern = "00:00:00 GMT", replacement = "GMT")
    } 
+   daysincestring <- if (grepl("\\d{2}-\\d{2} GMT", startList[1])) { # A not very elegant arrangement for netcdf-java API compliance
+       gsub(pattern = " GMT", replacement = "T00:00:00", startList[1])        
+   } else {
+       startList[1]
+   }
    times <- (as.double(datesList) - as.double(datesList[1])) / 86400
-   dimtime <- ncdim_def("time", paste("days since", startList[1]), times, unlim = FALSE,
+   dimtime <- ncdim_def("time", paste("days since", daysincestring), times, unlim = FALSE,
                         calendar = "gregorian", create_dimvar = TRUE)
    if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole") {
       dimlon  <- ncdim_def("rlon", units = "degrees", data$xyCoords$x,
