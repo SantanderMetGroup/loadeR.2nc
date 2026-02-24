@@ -271,7 +271,7 @@ grid2nc <- function(data,
    ncatt_put(ncnew, "time", "standard_name","time")
    ncatt_put(ncnew, "time", "axis","T")
    ncatt_put(ncnew, "time", "_CoordinateAxisType","Time")
-   ncatt_put(ncnew, "time", "_ChunkSize",1)
+   ## ncatt_put(ncnew, "time", "_ChunkSize",1)
    if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords,
                                                           "projection") == "RotatedPole") {
       ncatt_put(ncnew, "rlon", "standard_name","grid_longitude")
@@ -332,7 +332,7 @@ grid2nc <- function(data,
    if (length(member.index) > 0) {
       ncatt_put(ncnew, "member", "standard_name","realization")
       ncatt_put(ncnew, "member", "_CoordinateAxisType","Ensemble")
-      ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation")
+      ## ncatt_put(ncnew, "member", "ref","http://www.uncertml.org/samples/realisation") ## This link doesn't work
       Nvar <- 1
       if (transformeR::isMultigrid(data)) {
          Nvar <- length(tmpStdName)
@@ -348,10 +348,10 @@ grid2nc <- function(data,
          }
          if (transformeR::isMultigrid(data)){
             ncatt_put(ncnew, var[[v]]$name, "description", attributes(data$Variable)$"description"[[v]])
-            ncatt_put(ncnew, var[[v]]$name, "longname", attributes(data$Variable)$"longname"[[v]])
+            ncatt_put(ncnew, var[[v]]$name, "long_name", attributes(data$Variable)$"longname"[[v]])
          } else {
             ncatt_put(ncnew, var[[v]]$name, "description", attributes(data$Variable)$"description")
-            ncatt_put(ncnew, var[[v]]$name, "longname", attributes(data$Variable)$"longname")
+            ncatt_put(ncnew, var[[v]]$name, "long_name", attributes(data$Variable)$"longname")
          }
          if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords,
                                                                 "projection") == "RotatedPole") {
@@ -378,10 +378,10 @@ grid2nc <- function(data,
             }
             if (transformeR::isMultigrid(data)){
                ncatt_put(ncnew, var[[v]]$name, "description", attributes(data$Variable)$"description"[[v]])
-               ncatt_put(ncnew, var[[v]]$name, "longname", attributes(data$Variable)$"longname"[[v]])
+               ncatt_put(ncnew, var[[v]]$name, "long_name", attributes(data$Variable)$"longname"[[v]])
             } else {
                ncatt_put(ncnew, var[[v]]$name, "description", attributes(data$Variable)$"description")
-               ncatt_put(ncnew, var[[v]]$name, "longname", attributes(data$Variable)$"longname")
+               ncatt_put(ncnew, var[[v]]$name, "long_name", attributes(data$Variable)$"longname")
             }
             if (!is.null(attr(data$xyCoords, "projection")) & attr(data$xyCoords, "projection") == "RotatedPole"){
                ncatt_put(ncnew, var[[v]]$name, "grid_mapping", "rotated_pole")
@@ -447,7 +447,7 @@ grid2nc <- function(data,
    }
    ncatt_put(ncnew, 0, "acknowledgement", "NetCDF file created by loadeR.2nc, a package of the 'climate4R' open-source framework <https://github.com/SantanderMetGroup/climate4R>")
    if (is.null(globalAttributes[["Conventions"]])) {
-      ncatt_put(ncnew, 0, "Conventions", "CF-1.8, ACDD-1.3")   
+      ncatt_put(ncnew, 0, "Conventions", "CF-1.12, ACDD-1.3")   
    }
    
    if (((!is.null(attr(data$xyCoords,
